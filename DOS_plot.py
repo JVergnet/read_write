@@ -1,15 +1,17 @@
 
 
-from pymatgen.electronic_structure.core import Spin, OrbitalType
-# import pymatgen.analysis.diffraction.xrd as xrd
-
 import matplotlib.pyplot as plt
 import numpy as np
-
-# from operator import itemgetter
+from pymatgen.electronic_structure.core import OrbitalType, Spin
 
 # import readRun_entries as read
 import generic_plot as generic_plot
+
+# import pymatgen.analysis.diffraction.xrd as xrd
+
+
+# from operator import itemgetter
+
 
 # DOS PLOTTING FONCTIONS
 # ============================================================================

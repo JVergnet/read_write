@@ -1,14 +1,14 @@
 # cluster.py
-from pymatgen.analysis.local_env import MinimumDistanceNN
-from pymatgen.transformations.standard_transformations \
-    import RemoveSpeciesTransformation
-# from pymatgen import Structure
-from pymatgen.core.operations import SymmOp
-
 from operator import itemgetter
 
 # import matplotlib.pyplot as plt
 import numpy as np
+from pymatgen.analysis.local_env import MinimumDistanceNN
+# from pymatgen import Structure
+from pymatgen.core.operations import SymmOp
+from pymatgen.transformations.standard_transformations import \
+    RemoveSpeciesTransformation
+
 # import math
 # import os
 # import readRun_entries as read
