@@ -45,8 +45,6 @@ import read_hull as hull
 # import platform
 
 
-
-
 # import bailar_twist as bailar
 # import readBader as bader
 # import readO2 as O2
@@ -78,7 +76,7 @@ def get_job_List(mainFolder, file_system_choice=None):
     if file_system_choice[0] == "p":
         file_system = "p"
         d = mainFolder
-        subDirList = [
+        subdir_list = [
             os.path.join(d, o)
             for o in os.listdir(d)
             if os.path.isdir(os.path.join(d, o))]
@@ -86,20 +84,20 @@ def get_job_List(mainFolder, file_system_choice=None):
     elif file_system_choice[0] == "s":
         file_system = "s"
         d = mainFolder
-        subDirList = []
+        subdir_list = []
         for folder in [
                 os.path.join(d, o)
                 for o in os.listdir(d)
                 if os.path.isdir(os.path.join(d, o))]:
-            subDirList += [
+            subdir_list += [
                 os.path.join(folder, o)
                 for o in os.listdir(folder)
                 if os.path.isdir(os.path.join(folder, o))]
 
     else:
         # file_system = "j"
-        subDirList = [mainFolder]
-    return(subDirList, file_system_choice)
+        subdir_list = [mainFolder]
+    return(subdir_list, file_system_choice)
 
 
 class Rundict(ComputedStructureEntry):
@@ -112,13 +110,13 @@ class Rundict(ComputedStructureEntry):
         1:    "pre-run",
         0:    "not a job folder"}
 
-    def __init__(self, c_e, status, jobFolder):
+    def __init__(self, c_e, status, job_folder):
 
         self.status = status
         self.status_string = self.status_dict[status]
-        self.jobFolder = jobFolder
-        self.stacking = jobFolder.split('/')[-2]
-        self.id = jobFolder.split('/')[-1].split("__")[-1]
+        self.job_folder = job_folder
+        self.stacking = job_folder.split('/')[-2]
+        self.id = job_folder.split('/')[-1].split("__")[-1]
         if c_e is not None:
             ComputedStructureEntry.__init__(self,
                                             c_e.structure, c_e.energy,
@@ -127,36 +125,63 @@ class Rundict(ComputedStructureEntry):
                                             data=c_e.data,
                                             entry_id=None)
 
-        self.generate_tags(c_e, status)
+        self.generate_tags()
 #     if c_e is not None:
 
-    def generate_tags(self, c_e, status, structure=None):
-        if status == 0:
-            return("{} Not a job folder".format(self.jobFolder))
+    def generate_tags(self):
+        if self.status == 0:
+            return("{} Not a job folder".format(self.job_folder))
         else:
-            if status > 0:  # pre-run : just the structure
+            if self.status > 0:  # pre-run : just the structure
                 self.get_structure_tag()
-            if status > 1:
+                self.get_nametag()
+            if self.status > 1:
                 # unconverged / corrupted run : just the energy
-                self.energy_per_FU = self.energy / self.nb_cell
+                self.energy_per_fu = self.energy / self.nb_cell
                 try:
                     self.get_magnetization()
                 except Exception:
                     print("could not define mag for", self.nameTag)
                 self.structure_data = self.structure.copy()
-            if status >= 3:  # converged run : DOS & co.
+            if self.status >= 3:  # converged run : DOS & co.
                 print(self.nameTag, self.data["efermi"])
                 # self.complete_dos = self.data["complete_dos"]
-                pass
         # return(self.as_dict())
+
+    def get_nametag(self):
+        " nameTag : get name of the current structure in a string nameTag"
+        structure = self.structure
+        self.nb_cell = 1
+        self.xNa = 0
+
+        D = structure.composition.get_el_amt_dict()
+
+        # sulfide or oxide ?
+        for spec in ['S', 'O']:
+            if D.get(spec, 0) > 0:
+                self.nb_cell = D[spec] / 2
+                break
+
+        # Normalizing composition to get Nax My O2
+        for key in D.keys():
+            D[key] = round(D[key] / self.nb_cell, 2)
+
+        # Na or Li insertion ?
+        for spec in ['Na', 'Li']:
+            if D.get(spec, 0) > 0:
+                self.xNa = D[spec]
+                break
+        # print(d['xNa'])
+
+        self.volume = structure.lattice.volume / self.nb_cell
+        self.formula = Composition(D).formula
+
+        self.nameTag = "{} : {} : {}".format(
+            self.formula, self.stacking, self.id)
 
     def get_structure_tag(self):
         "Structure and composition related tags "
-        d = get_nametag(self.structure)
-        for (k, v) in d.items():
-            setattr(self, k, v)
-        self.nameTag = "{} : {} : {}".format(
-            self.formula, self.stacking, self.id)
+
         analyzer = SpacegroupAnalyzer(self.structure, symprec=0.1)
         self.spacegroup = analyzer.get_space_group_symbol()
 
@@ -170,16 +195,17 @@ class Rundict(ComputedStructureEntry):
         return({"xNa": self.xNa, "doo_min": self.doo_min}[coord])
 
     def get_magnetization(self):
-        self.mag = Oszicar(self.jobFolder +
+        self.mag = Oszicar(self.job_folder +
                            "/OSZICAR").ionic_steps[-1]["mag"]\
             / len(self.structure.indices_from_symbol("Mn"))
 
     # runDict['bandgap'] = runDict['vaspRun'].eigenvalue_band_properties[0]
 
     def get_MMOO_tags(self):
-
-        # get oxygens pairs for quantification of A.R. distortion
-        # /!\ Cannot define layers in Na rich compositions
+        """ 
+        get oxygens pairs for quantification of A.R. distortion
+                /!\ Cannot define layers in Na rich compositions
+        """
 
         try:
             self.MMOO_quadruplets = \
@@ -196,7 +222,7 @@ class Rundict(ComputedStructureEntry):
         d["@class"] = self.__class__.__name__
         d.update(dict(status=self.status,
                       status_string=self.status_string,
-                      jobFolder=self.jobFolder,
+                      jobFolder=self.job_folder,
                       stacking=self.stacking,
                       id=self.id,
                       # structure_data=self.structure_data.as_dict()
@@ -218,11 +244,11 @@ class Rundict(ComputedStructureEntry):
     def from_structure(cls, structure, entry_id):
         c_e = None
         status = 1
-        jobFolder = ""
-
-        return(cls(c_e, status,
-                   jobFolder, structure=structure,
-                   entry_id=entry_id))
+        job_folder = ""
+        c_e = ComputedStructureEntry(structure=structure,
+                                     energy=1000000000000000000000.0,
+                                     entry_id=entry_id)
+        return(cls(c_e, status, job_folder))
 
 
 def if_file_exist_gz(folder, non_comp_file):
@@ -490,103 +516,6 @@ def generate_tags(vaspRunDictList, force=False, minimal=False):
     # print(sorted_entries)
 
     return(sorted_entries)
-
-
-def get_nametag(structure):
-    d = {}
-    d['nb_cell'] = 1
-    d['xNa'] = 0
-
-    D = structure.composition.get_el_amt_dict()
-
-    # sulfide or oxide ?
-    for spec in ['S', 'O']:
-        if D.get(spec, 0) > 0:
-            d['nb_cell'] = D[spec] / 2
-            break
-
-    # Normalizing composition to get Nax My O2
-    for key in D.keys():
-        D[key] = round(D[key] / d['nb_cell'], 2)
-
-    # Na or Li insertion ?
-    d['xNa'] = 0
-    for spec in ['Na', 'Li']:
-        if D.get(spec, 0) > 0:
-            d['xNa'] = D[spec]
-            break
-    # print(d['xNa'])
-
-    d['volume'] = structure.lattice.volume / d['nb_cell']
-    d['formula'] = Composition(D).formula
-
-    # nameTag : get name of the current structure in a string nameTag
-
-    return(d)
-
-
-def get_tag_single_run(runDict, minimal=True):
-    runDict = get_nametag(runDict)
-
-    runDict['nameTag'] = "{} \n {} : {}".format(
-        runDict["formula"], runDict["stacking"], runDict["id"])
-
-    # Folder related tags =======================================
-    # require the folder to be named coherently  :
-    # mainfolder / allotrope_type / NaxMO2
-    structure = runDict['structure']
-    # structureTag :Contains various analysis depending on options
-    # Get the spacegroup of the structure and additionnal infos
-    runDict['structureTag'] = get_structure_tag(structure)
-
-    # get equivalent sites of the current structure in a list of dict
-    runDict['equivSiteList'] = get_equiv_site_list(structure)
-
-    if not minimal:
-        doo_min, doo_indices = cluster.get_min_OO_dist(structure)
-        runDict['dOO_min'] = doo_min if doo_indices is not None else None
-        runDict['dOO_min_indices'] = doo_indices if doo_indices is not None else None
-        # print("doo", runDict['dOO_min'])
-
-        # get oxygens pairs for quantification of anionic redox distortion
-        # try except to avoid Na rich compositions (cannot define layers in
-        # this case)
-
-        try:
-            MMOO_dicts_list = cluster.get_MMOO_quadruplets(structure)
-            runDict["MMOO_quadruplets"] = MMOO_dicts_list
-            runDict["OO_pairs"] = [q["oxygen_pair"] for q in MMOO_dicts_list]
-        except Exception as ex:
-            print(traceback.format_exc())
-            print("could no define MMOO clusters because {}".format(ex))
-
-    # energyTag : get energy of the structure in a string energyTag
-    # the energy per atom  for the GS or the energy above GS for other config
-    runDict['energyTag'] = "not defined"
-
-    try:
-        # if runDict['status'] >= 2.5:
-        if PARAM["verbose"] > 0:
-            print("etot", runDict["etot"], "nb cell", runDict['nb_cell'])
-        runDict['ediff'] = runDict["etot"] / runDict['nb_cell']
-
-        runDict['energyTag'] = "E = {0:.5f} eV ".format(runDict['ediff'])
-        # try:
-        runDict["mag"] = Oszicar(runDict['folder'] +
-                                 "/OSZICAR").ionic_steps[-1]["mag"]\
-            / len(runDict['structure'].indices_from_symbol("Mn"))
-
-        # if runDict['status'] >= 3:
-        runDict['bandgap'] = runDict['vaspRun'].eigenvalue_band_properties[0]
-
-    except Exception as ex:
-        if PARAM["verbose"] > 0:
-            print("error in run with status {} : {}".format(
-                runDict['status'], ex))
-        # v.eigenvalue_band_properties =tuple  (band gap, cbm, vbm,
-        # is_band_gap_direct)
-
-    return(runDict)
 
 
 def write_log_file(vaspRunDictList, logFolder):
