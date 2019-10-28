@@ -67,15 +67,15 @@ PARAM['generated_tags'] = False
 # =========================================
 
 
-def get_job_List(mainFolder, file_system_choice=None):
-    print("\n {} \n ".format(mainFolder))
+def get_job_list(main_folder, file_system_choice=None):
+    print("\n {} \n ".format(main_folder))
     if file_system_choice is None:
         file_system_choice = input(
             "[j]ob / [p]roject / [s]uper_project ?  :  ")
 
     if file_system_choice[0] == "p":
         file_system = "p"
-        d = mainFolder
+        d = main_folder
         subdir_list = [
             os.path.join(d, o)
             for o in os.listdir(d)
@@ -83,7 +83,7 @@ def get_job_List(mainFolder, file_system_choice=None):
 
     elif file_system_choice[0] == "s":
         file_system = "s"
-        d = mainFolder
+        d = main_folder
         subdir_list = []
         for folder in [
                 os.path.join(d, o)
@@ -96,7 +96,7 @@ def get_job_List(mainFolder, file_system_choice=None):
 
     else:
         # file_system = "j"
-        subdir_list = [mainFolder]
+        subdir_list = [main_folder]
     return(subdir_list, file_system_choice)
 
 
@@ -116,7 +116,7 @@ class Rundict(ComputedStructureEntry):
         self.status_string = self.status_dict[status]
         self.job_folder = job_folder
         self.stacking = job_folder.split('/')[-2]
-        self.id = job_folder.split('/')[-1].split("__")[-1]
+        self.str_id = job_folder.split('/')[-1].split("__")[-1]
         if c_e is not None:
             ComputedStructureEntry.__init__(self,
                                             c_e.structure, c_e.energy,
@@ -141,10 +141,10 @@ class Rundict(ComputedStructureEntry):
                 try:
                     self.get_magnetization()
                 except Exception:
-                    print("could not define mag for", self.nameTag)
+                    print("could not define mag for", self.name_tag)
                 self.structure_data = self.structure.copy()
             if self.status >= 3:  # converged run : DOS & co.
-                print(self.nameTag, self.data["efermi"])
+                print(self.name_tag, self.data["efermi"])
                 # self.complete_dos = self.data["complete_dos"]
         # return(self.as_dict())
 
@@ -176,8 +176,8 @@ class Rundict(ComputedStructureEntry):
         self.volume = structure.lattice.volume / self.nb_cell
         self.formula = Composition(D).formula
 
-        self.nameTag = "{} : {} : {}".format(
-            self.formula, self.stacking, self.id)
+        self.name_tag = "{} : {} : {}".format(
+            self.formula, self.stacking, self.str_id)
 
     def get_structure_tag(self):
         "Structure and composition related tags "
@@ -224,7 +224,7 @@ class Rundict(ComputedStructureEntry):
                       status_string=self.status_string,
                       jobFolder=self.job_folder,
                       stacking=self.stacking,
-                      id=self.id,
+                      id=self.str_id,
                       # structure_data=self.structure_data.as_dict()
                       # mag=self.mag
                       ))
@@ -355,7 +355,7 @@ def collect_valid_runs(
     # it is added to the vaspRunList[]
     # Create a list of all the subfolder of the run
 
-    subDirList, file_system_choice = get_job_List(
+    subDirList, file_system_choice = get_job_list(
         mainFolder, file_system_choice=file_system_choice)
 
     if vaspRun_parsing_lvl is None:
@@ -395,20 +395,19 @@ def collect_valid_runs(
     converged_runs = []
 
     if checkDiff:
-        for d in tmp_list:
-            if d.status > 0:
-                newStruct = True
-                for existingRun in converged_runs:
-                    if d.structure.matches(
-                            existingRun.structure):
-                        print(
-                            "Structure : {0} match with previous one :  {1}".format(
-                                d.parameters['incar'].get('SYSTEM', "no_name"),
-                                existingRun.parameters['incar'].get(
-                                    'SYSTEM', "no_name")))
-                        newStruct = False
-                if newStruct and d.status > 0:
-                    converged_runs.append(d)
+        for d in [d for d in tmp_list if d.status > 0]:
+            new_struct = True
+            for existing_run in converged_runs:
+                if d.structure.matches(
+                        existing_run.structure):
+                    print(
+                        "Structure : {0} match with previous one :  {1}".format(
+                            d.parameters['incar'].get('SYSTEM', "no_name"),
+                            existing_run.parameters['incar'].get(
+                                'SYSTEM', "no_name")))
+                    new_struct = False
+            if new_struct and d.status > 0:
+                converged_runs.append(d)
 
     else:
         valid_runs = [d for d in tmp_list if d.status > 0]
@@ -421,7 +420,7 @@ def collect_valid_runs(
 def collect_folder_list():
     global PARAM
 
-    folder_List = [PARAM['mainFolder']]
+    folder_list = [PARAM['mainFolder']]
 
     # if param['graph_type'] == "hull":
     #     add_folder = True
@@ -433,18 +432,18 @@ def collect_folder_list():
     #         elif (os.path.exists(secondFolder)):
     #             folder_List.append(secondFolder)
 
-    return(folder_List)
+    return(folder_list)
 
 
 def get_vasp_run_dict_list():
     folder_list = collect_folder_list()
-    vaspRunDictList = []
+    rundict_list = []
     for folder in folder_list:
-        vaspRunDictList += collect_valid_runs(folder)
-    print("\nnb of valid runs : {0}".format(len(vaspRunDictList)))
-    for run in vaspRunDictList:
+        rundict_list += collect_valid_runs(folder)
+    print("\nnb of valid runs : {0}".format(len(rundict_list)))
+    for run in rundict_list:
         print(run.nameTag, run.status_string)
-    return(vaspRunDictList)
+    return(rundict_list)
 
 
 def sort_run(vaspRunDictList, sort_key="nelect"):
@@ -461,9 +460,9 @@ def sort_run(vaspRunDictList, sort_key="nelect"):
 
     print("sorting by {}".format(sort_key))
     sort = Sort()
-    sortedRun = sorted(vaspRunDictList,
-                       key=getattr(sort, sort_key))
-    return(sortedRun)
+    sorted_run_list = sorted(vaspRunDictList,
+                             key=getattr(sort, sort_key))
+    return(sorted_run_list)
 
 
 # TAG GENERATION FUNCTIONS

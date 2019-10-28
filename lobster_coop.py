@@ -35,7 +35,6 @@ import readRun_entries as read
 # import sys
 
 
-
 """
     a) Générer un ficher de point K dans lequel la multiplicité de chaque point est 1.
 
@@ -249,7 +248,7 @@ def make_lobsterin(folder, bond="O_O"):
 def COOP_from_folder(mainDir, bond="O_O"):
     COOP_folders = []
     complete_coop_list = []
-    subDirList, fileSystem = read.get_job_List(mainDir)
+    subDirList, fileSystem = read.get_job_list(mainDir)
     for d in subDirList:
         complete_coop_list.append(get_COOP_from_folder(d, bond=bond))
 
