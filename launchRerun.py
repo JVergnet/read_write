@@ -198,7 +198,7 @@ def main():
     print("selected runs : \n {}".format(
         [print(rundict.id) for rundict in rerun_list]))
     try:
-        perturb = eval(
+        perturb = float(
             input('Perturb the initial position of atoms ? in Angstrom '))
     except Exception as ex:
         print("No perturbation")
@@ -363,8 +363,8 @@ def main():
                 efermi = rundict.data['efermi']
                 print(efermi)
                 incar["LPARD"] = "True"
-                below_fermi = eval(input("Emin (Efermi=0) ?"))
-                above_fermi = eval(input("Emax (Efermi=0) ?"))
+                below_fermi = float(input("Emin (Efermi=0) ?"))
+                above_fermi = float(input("Emax (Efermi=0) ?"))
                 incar["EINT"] = "{} {}".format(efermi+below_fermi,
                                                efermi+above_fermi)
                 # incar["EINT"] = "{} {}".format(efermi, efermi+0.5)
