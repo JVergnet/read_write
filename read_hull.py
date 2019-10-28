@@ -2,10 +2,11 @@
 
 # import logging
 
-from matplotlib.collections import LineCollection
-from matplotlib.ticker import AutoMinorLocator
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.collections import LineCollection
+from matplotlib.ticker import AutoMinorLocator
+
 # from operator import itemgetter
 # import readRun_entries as read
 import generic_plot as generic_plot
@@ -214,7 +215,7 @@ def plot_convex_hull(sorted_entries, coord='xNa'):
         # print([yerr_down, yerr_up])
         axe.errorbar(
             X_clean, E_clean,
-            yerr=[yerr_up, yerr_up],
+            yerr=[yerr_down, yerr_up],
             fmt='',
             linestyle="None")
 

@@ -506,7 +506,7 @@ def plot_OO_angles(struct_list, axes0=None):
     if axes0 is None:
         fig.legend()
         plt.show(block=False)
-        read.save_fig(fig, "OO angles", save_mode=None, folder=None)
+        generic_plot.save_fig(fig, "OO angles", save_mode=None, folder=None)
         return(fig)
     else:
         return(axes)
@@ -692,7 +692,7 @@ def plot_structure_graphs(runList, chem_env_done):
     if input("plot angles/energy relation  for converged runs  ? Y / N  : ") == "Y":
         converged_runs = [d for d in runList if d.status >= 3]
         importlib.reload(PES_plot)
-        fig_angle_3D = PES_plot.plot_3d_angle_energy_from_struct_list(
+        fig_done = PES_plot.plot_3d_angle_energy_from_struct_list(
             converged_runs, struct_mesh=None)
 
     if input("plot properties as function of min dOO ? Y / N  : ") == "Y":

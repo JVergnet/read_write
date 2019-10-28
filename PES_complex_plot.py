@@ -50,8 +50,10 @@ def plot_3d_angle_energy_from_struct_list(struct_list, struct_mesh=None):
     XYZE_mesh, XYZE_mesh_all = get_OO_angles_prop(
         struct_mesh, prop=prop) if struct_mesh is not None else (None, None)
 
-    plot_3D_angles_PES(XYZE_relax_mean, struct_list,
+    fig_done = plot_3D_angles_PES(XYZE_relax_mean, struct_list,
                        XYZE_mesh=XYZE_mesh, XYZE_relax_all=XYZE_relax_all,)
+
+    return(fig_done)          
 
 
 def get_OO_angles_prop(struct_list, prop="ediff"):
