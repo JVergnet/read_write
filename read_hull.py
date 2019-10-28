@@ -222,7 +222,7 @@ def plot_convex_hull(sorted_entries, coord='xNa'):
     # # Plot all entries (hollow circles) [sorted_entries]
     for entry in sorted_entries:
         try:
-            a = entry.eform
+            print(entry.eform)
         except Exception as ex:
             print("Exception raised for {} : {}".format(entry.nameTag, ex))
     for stacking in stacking_list:

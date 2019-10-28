@@ -384,12 +384,7 @@ def measure_quadruplet_angles_old(struct, MMOO):
 
     O1, O2 = MMOO['oxygen_pair']
     M1, M2 = MMOO['metal_pair']
-    X = []
-    for index in [M1, O1, O2]:
-        d, jimage = struct[O1].distance_and_image(struct[index], jimage=None)
-        X.append(struct.lattice.get_cartesian_coords(
-            struct[index].frac_coords + np.array(jimage)))
-    XM, XO1, XO2 = X
+    XM, XO1, XO2 = [get_coord(struct, O1, i) for i in [M1, O1, O2]]
     # define two "virtual points" above and below the metal (en the upper and
     # lower Oxygen planes)
     XA1, XA2 = [np.array([XM[0], XM[1], Xi[2]]) for Xi in [XO1, XO2]]
@@ -399,23 +394,22 @@ def measure_quadruplet_angles_old(struct, MMOO):
     # print( bailar_angle, trigonal_length)
     return(bailar_angle, trigonal_length)
 
+def get_coord(struct, O1, index):
+    d, jimage = struct[O1].distance_and_image(struct[index], jimage=None)
+    return(struct.lattice.get_cartesian_coords(
+        struct[index].frac_coords + np.array(jimage)))
+
 
 def measure_quadruplet_angles_old_old(struct, MMOO):
 
     # abc = np.array(struct.lattice.abc)
-    X = []
     bailar_angles = []
     trigonal_angles = []
     # print(MMOO)
     O1, O2 = MMOO['oxygen_pair']
     M1, M2 = MMOO['metal_pair']
 
-    for Xi in [M1, M2, O1, O2]:
-        d, jimage = struct[O2].distance_and_image(struct[Xi], jimage=None)
-        # print(jimage)
-        X.append(struct.lattice.get_cartesian_coords(
-            struct[Xi].frac_coords + np.array(jimage)))
-    XM1, XM2, XO1, XO2 = X
+    XM1, XM2, XO1, XO2 = [get_coord(struct, O1, Xi) for Xi in [M1, M2, O1, O2]]
     # print("XM1",XM1,"XM2", XM2,"XO1",XO1, "XO2", XO2)
 
     XOm = (XO1 + XO2) / 2
@@ -478,8 +472,8 @@ def plot_OO_angles(struct_list, axes0=None):
         X_all = np.vstack(X_all)
         # print(Y_all)
         print(Y_all.shape, X_all.shape)
-        Y_min_list = np.amin(Y_all, axis=1)
-        Y_max_list = np.amax(Y_all, axis=1)
+        # Y_min_list = np.amin(Y_all, axis=1)
+        # Y_max_list = np.amax(Y_all, axis=1)
         Y_mean_list = np.sum(Y_all, axis=1) * (1 / len(d.MMOO_quadruplets))
         X_mean = np.array([d.xNa for d in struct_list])
         print(Y_mean_list.shape, X_mean.shape)
@@ -694,6 +688,7 @@ def plot_structure_graphs(runList, chem_env_done):
         importlib.reload(PES_plot)
         fig_done = PES_plot.plot_3d_angle_energy_from_struct_list(
             converged_runs, struct_mesh=None)
+        print(fig_done)
 
     if input("plot properties as function of min dOO ? Y / N  : ") == "Y":
         runList = [r for r in runList if r.status >= 3]
@@ -781,6 +776,6 @@ def plot_structure_graphs(runList, chem_env_done):
 
 def plot_doo_mag(runList):
 
-    fig = plt.figure()
+    plt.figure()
 
     return(True)
