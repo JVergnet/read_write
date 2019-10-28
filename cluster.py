@@ -419,7 +419,7 @@ def alkaliBondCount(struc):
 def metal_envt(struc):
 
     # Counts the Me environment in a structure
-    #argument : pymatgen.core.structure
+    # argument : pymatgen.core.structure
     # return : 2elt list of (7 element list) : the i th element is the
     # propotion of A with i A neighbors
 
@@ -427,11 +427,11 @@ def metal_envt(struc):
     B = "Mn"
     C = "Na"
 
-    neighborA = [0 for i in range(0, 7, 1)]
-    neighborB = [0 for i in range(0, 7, 1)]
-    A_indices = struc.indices_from_symbol(C)
-    nbC = len(C_indices)
-
+    # neighborA = [0 for i in range(0, 7, 1)]
+    # neighborB = [0 for i in range(0, 7, 1)]
+    # A_indices = struc.indices_from_symbol(A)
+    nbC = len(struc.indices_from_symbol(C))
+    neighborC = np.zeros(6)
     #print("{0} {1}".format(nbC,C))
 
     sCopy = RemoveSpeciesTransformation(["O"]).apply_transformation(struc)
@@ -448,7 +448,7 @@ def metal_envt(struc):
             coordA = 0
             coordB = 0
             for neighbor in neigList:
-                index = neighbor['site_index']
+                # index = neighbor['site_index']
                 neighborName = neighbor['site'].species_string
                 #print(" ( {0} at {1} ) ".format(neighborName,index))
                 if neighborName == A:
@@ -467,8 +467,6 @@ def metal_envt(struc):
             C, neighborC, nbC, normalizedNeighborC))
 
     return normalizedNeighborC
-
-    return good_Mn_list
 
 
 def get_layer_indices(struct, separator_specie, refIndex=-1):
@@ -692,15 +690,15 @@ def get_layer_indices_by_number(struct, specie_list, layer_index=-1):
     return(current_layer)
 
 
-def p2_to_O2_old(P2_struct):
+# def p2_to_O2_old(P2_struct):
 
-    all_layer = get_layer_indices(P2_struct, ["Na"])
-    # O_global=P2_struct.indices_from_symbol("O")
-    #O_layerlist = (set(O_global) & set(all_layer))
-    O2_struct = shift_indices(P2_struct, all_layer,
-                              angle=0, translation=(1 / 3, 1 / 3, 0))
-    O2_struct.to(fmt="poscar", filename="O2_POSCAR")
-    return(O2_struct)
+#     all_layer = get_layer_indices(P2_struct, ["Na"])
+#     # O_global=P2_struct.indices_from_symbol("O")
+#     #O_layerlist = (set(O_global) & set(all_layer))
+#     O2_struct = shift_indices(P2_struct, all_layer,
+#                               angle=0, translation=(1 / 3, 1 / 3, 0))
+#     O2_struct.to(fmt="poscar", filename="O2_POSCAR")
+#     return(O2_struct)
 
 
 def p2_to_O2(P2_struct):
@@ -843,10 +841,11 @@ def shifted_sites_after_prismatic_disto(struct, metal_index, angle):
     O_above = [O['site_index'] for O in neighbor_O if O['site'].z - Z > 0]
     O_below = [O['site_index'] for O in neighbor_O if O['site'].z - Z < 0]
 
-    trueSites += find_translated_sites(struct, O_above,
-                                       angle, translation=(0, 0, 0), center=[X, Y, Z])
-    trueSites += find_translated_sites(struct, O_below, -
-                                       angle, translation=(0, 0, 0), center=[X, Y, Z])
+    symOperation = find_symmop(struct, angle, translation=(0, 0, 0), center=[X, Y, Z])
+    trueSites += find_translated_sites(struct, O_above,symOperation)
+
+    symOperation = find_symmop(struct, -angle, translation=(0, 0, 0), center=[X, Y, Z])     
+    trueSites += find_translated_sites(struct, O_below, symOperation)
 
     return(trueSites)
 
