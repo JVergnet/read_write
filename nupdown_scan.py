@@ -31,34 +31,32 @@ except Exception as ex:
     plotly_available = False
 
 
-
-
-def get_mag_tag_list(vaspRunDictList):
+def get_mag_tag_list(rundict_list):
 
     vasp_run_poll = []
     with Pool(processes=cpu_count()) as p:
-        vasp_run_poll = p.map(get_mag_tag_single, vaspRunDictList)
+        vasp_run_poll = p.map(get_mag_tag_single, rundict_list)
         p.close()
         p.join()
 
     return(vasp_run_poll)
 
 
-def get_mag_tag_single(runDict):
-    if not hasattr(runDict, "mag"):
-        runDict.mag = Oszicar(runDict.jobFolder + "/OSZICAR"
+def get_mag_tag_single(rundict):
+    if not hasattr(rundict, "mag"):
+        rundict.mag = Oszicar(rundict.jobFolder + "/OSZICAR"
                               ).ionic_steps[-1]["mag"] /\
-            runDict.nb_cell
-    return(runDict)
+            rundict.nb_cell
+    return(rundict)
 
 
-def plot_mag_graphs(runDict_list):
+def plot_mag_graphs(rundict_list):
     generic_plot.set_mpl_rc_params()
     nupdown = False
     if nupdown:
-        runDict_list = get_mag_tag_list(runDict_list)
+        rundict_list = get_mag_tag_list(rundict_list)
         sorted_runs = sorted(
-            runDict_list,
+            rundict_list,
             key=lambda k: (
                 k.xNa,
                 k.mag,
@@ -82,69 +80,75 @@ def plot_mag_graphs(runDict_list):
             plot_mag_heatmap(selected_runs)
 
     if input("Plot nelect heatmap ? [Y]") in ["Y", "y"]:
-        plot_nelect_heatmap(runDict_list)
+        plot_nelect_heatmap(rundict_list)
 
 
-def plot_nelect_heatmap(input_runDict_list):
+def plot_nelect_heatmap(input_rundict_list):
 
     nb_plots = 1
     axes = []
 
-    runDict_list = ([d for d in input_runDict_list if (
+    rundict_list = ([d for d in input_rundict_list if (
         d.status >= 3)])
-    for runDict in runDict_list:
-        runDict.nelect = runDict.parameters["incar"]['NELECT']
-        o_1, o_2 = runDict.structure.indices_from_symbol("O")
-        runDict.doo = runDict.structure.distance_matrix[o_1, o_2]
+    for rundict in rundict_list:
+        rundict.nelect = rundict.parameters["incar"]['NELECT']
+        try:
+            o_x = rundict.structure.indices_from_symbol("O")
+        except ValueError:
+            o_x = rundict.structure.indices_from_symbol("S")
+        rundict.doo = rundict.structure.distance_matrix[o_x[0], o_x[1]]
 
     # define a vertical slice : all structure with same NELECT (x axis)
-    for nelect in set([d.nelect for d in runDict_list]):
-        struct_list_slice = [d for d in runDict_list if d.nelect == nelect]
-        E_min = min([d.energy_per_FU for d in struct_list_slice])
+    for nelect in {d.nelect for d in rundict_list}:
+        struct_list_slice = [d for d in rundict_list if d.nelect == nelect]
+        e_min = min([d.energy_per_FU for d in struct_list_slice])
         print(" nelect={} :  {} runs, E min = {:.2f} ".
-              format(nelect, len(struct_list_slice), E_min))
+              format(nelect, len(struct_list_slice), e_min))
 
         for d in struct_list_slice:
-            d.e_valley = (d.energy_per_FU - E_min)  # in meV
+            d.e_valley = (d.energy_per_FU - e_min)  # in meV
 
-    XYE = np.array([[d.nelect, d.doo, d.e_valley] for d in runDict_list])
+    x_y_e = np.array([[d.nelect, d.doo, d.e_valley] for d in rundict_list])
     # XYE =  np.flipud( XYE)
 
     # interpolation of the grid of computed points
-    x = np.linspace(min(XYE[:, 0]), max(XYE[:, 0]), num=100)
-    y = np.linspace(min(XYE[:, 1]), max(XYE[:, 1]), num=100)
+    # x = make_linspace(x_y_e[:, 0])
+    # y = np.linspace(min(x_y_e[:, 1]), max(x_y_e[:, 1]), num=100)
 
-    grid_x, grid_y = np.meshgrid(x, y)
+    grid_x, grid_y = np.meshgrid(make_linspace(
+        x_y_e[:, 0]), make_linspace(x_y_e[:, 1]))
     #print( XYE[:,2])
-    interp_E = griddata(XYE[:, 0:2], XYE[:, 2],
+    interp_e = griddata(x_y_e[:, 0:2], x_y_e[:, 2],
                         (grid_x, grid_y), method='linear')
-    min_E = np.nan_to_num(interp_E).min()
-    max_E = np.nan_to_num(interp_E).max()
-    interp_E = interp_E - min_E
-    surface_color = interp_E
-    colorbar_title = "Energy"
+    min_e = np.nan_to_num(interp_e).min()
+    max_e = np.nan_to_num(interp_e).max()
+    interp_e = interp_e - min_e
+    # surface_color = interp_e
+    # colorbar_title = "Energy"
     file_name = 'OO_landscape_energy'
 
     # print(interp_E)
-    print("min E {} , max E {}".format(min_E, max_E))
+    print("min E {:.4f} , max E {:.4f}".format(min_e, max_e))
     fig = plt.figure(file_name, figsize=(11, 9))
     axes.append(fig.add_subplot(1, nb_plots, 1))
     bounds = np.linspace(0, 5, num=21, endpoint=True)
     norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
-    E_img = axes[-1].contourf(grid_x,
+    e_img = axes[-1].contourf(grid_x,
                               grid_y,
-                              interp_E,
+                              interp_e,
                               bounds,
                               cmap='coolwarm',
                               norm=norm,
                               extend='max')
     # axe_img.cmap.set_under('white')
-    E_img.cmap.set_over('black')
-
+    e_img.cmap.set_over('xkcd:brick red')
+    axes[-1].scatter(x_y_e[:, 0], x_y_e[:, 1], c="black", marker="+",
+                     s=30, label="computed structures",
+                     alpha=0.3)
     # CS3.cmap.set_under('yellow')
     # CS3.cmap.set_over('cyan')
     #
-    cbar = fig.colorbar(E_img, ax=axes[-1])
+    cbar = fig.colorbar(e_img, ax=axes[-1])
     #  ,  norm=colors.PowerNorm(gamma=1./3.) ) //,
     # axes[-1].imshow(interp_E, extent=(np.amin(x), np.amax(x), np.amin(y), np.amax(y)),
     #                             cmap=cm.jet) #, norm=LogNorm())
@@ -160,7 +164,11 @@ def plot_nelect_heatmap(input_runDict_list):
     plt.show(block=False)
 
 
-def plot_mag_heatmap(input_runDict_list):
+def make_linspace(x_1d_vect):
+    return np.linspace(min(x_1d_vect), max(x_1d_vect), num=100)
+
+
+def plot_mag_heatmap(input_rundict_list):
 
     landscapes_to_draw = [("O", "charge", "min", "Reds"),
                           ("Mn", "charge", "max", "Greens")]
@@ -168,56 +176,56 @@ def plot_mag_heatmap(input_runDict_list):
     nb_plots = len(landscapes_to_draw) + 1
     axes = []
 
-    runDict_list = ([d for d in input_runDict_list if (
+    rundict_list = ([d for d in input_rundict_list if (
         d.status >= 3 and d.mag >= 2 and d.mag <= 3.7)])
 
-    for xNa in set([d.xNa for d in runDict_list]):
-        struct_list_slice = [d for d in runDict_list if d.xNa == xNa]
-        E_min = min([d.energy_per_FU for d in struct_list_slice])
+    for x_na in set([d.xNa for d in rundict_list]):
+        struct_list_slice = [d for d in rundict_list if d.xNa == x_na]
+        e_min = min([d.energy_per_FU for d in struct_list_slice])
         print(
             " xNa ={} :  {} runs, E min = {:.2f} ".format(
-                xNa,
+                x_na,
                 len(struct_list_slice),
-                E_min))
+                e_min))
         for d in struct_list_slice:
-            d.e_valley = 1000 * (d.energy_per_FU - E_min)
+            d.e_valley = 1000 * (d.energy_per_FU - e_min)
 
-    XYE = np.array([[d.xNa, d.mag, d.e_valley] for d in runDict_list])
+    x_y_e = np.array([[d.xNa, d.mag, d.e_valley] for d in rundict_list])
     # XYE =  np.flipud( XYE)
     # interpolation of the grid of computed points
-    x = np.linspace(min(XYE[:, 0]), max(XYE[:, 0]), num=100)
-    y = np.linspace(min(XYE[:, 1]), max(XYE[:, 1]), num=100)
+    x = make_linspace(x_y_e)
+    y = np.linspace(min(x_y_e[:, 1]), max(x_y_e[:, 1]), num=100)
 
     grid_x, grid_y = np.meshgrid(x, y)
     #print( XYE[:,2])
-    interp_E = griddata(XYE[:, 0:2], XYE[:, 2],
+    interp_e = griddata(x_y_e[:, 0:2], x_y_e[:, 2],
                         (grid_x, grid_y), method='cubic')
-    min_E = np.nan_to_num(interp_E).min()
-    interp_E = interp_E - min_E
-    surface_color = interp_E
+    min_e = np.nan_to_num(interp_e).min()
+    interp_e = interp_e - min_e
+    surface_color = interp_e
     colorbar_title = "Energy"
     file_name = 'Sz_landscape_energy'
 
     # print(interp_E)
-    print("min E", interp_E.min(), "max E", interp_E.max())
+    print("min E", interp_e.min(), "max E", interp_e.max())
     fig = plt.figure(file_name, figsize=(15, 5))
     axes.append(fig.add_subplot(1, nb_plots, 1))
     bounds = np.array([0, 10, 25, 50, 100, 150, 200, 300, 400])
     norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
-    E_img = axes[-1].contourf(grid_x,
+    e_img = axes[-1].contourf(grid_x,
                               grid_y,
-                              interp_E,
+                              interp_e,
                               bounds,
                               cmap='coolwarm',
                               norm=norm,
                               extend='max')
     # axe_img.cmap.set_under('white')
-    E_img.cmap.set_over('black')
+    e_img.cmap.set_over('black')
 
     # CS3.cmap.set_under('yellow')
     # CS3.cmap.set_over('cyan')
     #
-    cbar = fig.colorbar(E_img, ax=axes[-1])
+    cbar = fig.colorbar(e_img, ax=axes[-1])
     #  ,  norm=colors.PowerNorm(gamma=1./3.) ) //,
     # axes[-1].imshow(interp_E, extent=(np.amin(x), np.amax(x), np.amin(y), np.amax(y)),
     #                             cmap=cm.jet) #, norm=LogNorm())
@@ -244,8 +252,8 @@ def plot_mag_heatmap(input_runDict_list):
             # specie = "O"
             # value = "charge"
             # value_type = "min"
-            value_list = np.zeros(len(runDict_list))
-            for i, run in enumerate(runDict_list):
+            value_list = np.zeros(len(rundict_list))
+            for i, run in enumerate(rundict_list):
                 nbSpecie = len(run.structure.indices_from_symbol(specie))
                 if nbSpecie == 0:
                     print(" no {} in the structure !!".format(specie))
@@ -269,9 +277,9 @@ def plot_mag_heatmap(input_runDict_list):
                             sites_values - np.average(sites_values))
                         ) / nbSpecie)
 
-            if np.isnan(value_list).any() == False:
+            if np.isnan(value_list).any() is False:
                 surface_color = griddata(
-                    XYE[:, 0:2], value_list, (grid_x, grid_y), method='cubic')
+                    x_y_e[:, 0:2], value_list, (grid_x, grid_y), method='cubic')
                 # print(surface_color)
                 #colorbar_title = "{} {} of {}".format(value_type, value,specie)
                 file_name = 'Landscape_{}_of_{}_{}'.format(
@@ -331,31 +339,31 @@ def plot_mag_heatmap(input_runDict_list):
     plt.show(block=False)
 
 
-def plot_mag_surface(runDict_list, colorcode="O_mag"):
+def plot_mag_surface(rundict_list, colorcode="O_mag"):
     if not plotly_available:
         print("plotly could not be imported, \n 3D plots not available")
         return(False)
 
-    mag_list = runDict_list
-    for xNa in set([d.xNa for d in mag_list]):
-        struct_list_slice = [d for d in mag_list if d.xNa == xNa]
-        E_min = min([d.energy_per_FU for d in struct_list_slice])
+    mag_list = rundict_list
+    for x_na in set([d.xNa for d in mag_list]):
+        struct_list_slice = [d for d in mag_list if d.xNa == x_na]
+        e_min = min([d.energy_per_FU for d in struct_list_slice])
         print(
             " xNa ={} :  {} runs, E min = {:.2f} ".format(
-                xNa, len(struct_list_slice), E_min))
+                x_na, len(struct_list_slice), e_min))
         for d in struct_list_slice:
-            d.e_valley = 1000 * (d.energy_per_FU - E_min)
+            d.e_valley = 1000 * (d.energy_per_FU - e_min)
 
-    XYE = np.array([[d.xNa, d.mag, d.e_valley]
-                    for d in mag_list if d.status >= 3])
+    x_y_e = np.array([[d.xNa, d.mag, d.e_valley]
+                      for d in mag_list if d.status >= 3])
 
     # interpolation of the grid of computed points
-    x = np.linspace(min(XYE[:, 0]), max(XYE[:, 0]), num=80)
-    y = np.linspace(min(XYE[:, 1]), max(XYE[:, 1]), num=50)
+    x = np.linspace(min(x_y_e[:, 0]), max(x_y_e[:, 0]), num=80)
+    y = np.linspace(min(x_y_e[:, 1]), max(x_y_e[:, 1]), num=50)
 
     grid_x, grid_y = np.meshgrid(x, y)
 
-    interp_E = griddata(XYE[:, 0:2], XYE[:, 2],
+    interp_E = griddata(x_y_e[:, 0:2], x_y_e[:, 2],
                         (grid_x, grid_y), method='cubic')
 
     surface_color = interp_E
@@ -392,7 +400,7 @@ def plot_mag_surface(runDict_list, colorcode="O_mag"):
                     value_list[i] = Y_max
         if not np.isnan(value_list).any():  # if no Nan value in the vector
             surface_color = griddata(
-                XYE[:, 0:2], value_list, (grid_x, grid_y), method='cubic')
+                x_y_e[:, 0:2], value_list, (grid_x, grid_y), method='cubic')
             colorbar_title = "{} {} of {}".format(value_type, value, specie)
             file_name = 'Sz_landscape_{}_{}_of_{}.html'.format(
                 value_type, value, specie)
@@ -430,9 +438,9 @@ def plot_mag_surface(runDict_list, colorcode="O_mag"):
     )
 
     data_scatter = go.Scatter3d(
-        x=XYE[:, 0],
-        y=XYE[:, 1],
-        z=XYE[:, 2],
+        x=x_y_e[:, 0],
+        y=x_y_e[:, 1],
+        z=x_y_e[:, 2],
         mode='markers',
         marker=dict(
             size=5,

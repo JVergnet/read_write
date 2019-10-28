@@ -12,7 +12,7 @@ import sys
 
 from pymatgen.io.vasp.inputs import Kpoints
 # from pymatgen import Structure
-from pymatgen.io.vasp.sets import MITRelaxSet, MPNonSCFSet  # ,MPStaticSet,
+from pymatgen.io.vasp.sets import MITRelaxSet  # , MPNonSCFSet  # ,MPStaticSet,
 
 import launchDisordered as launch
 import platform_id
@@ -31,11 +31,11 @@ from drawKpoints import drawkpt
 #     matplotlib.use("Agg")
 
 
-def less_precise_incar():
+def less_precise_incar(struct):
     return(dict(ENCUT=600,
                 PREC='Normal',
                 EDIFFG=-1E-01,
-                EDIFF=1E-04 * s.num_sites,
+                EDIFF=1E-04 * struct.num_sites,
                 NSW=100,
                 # far from minimum : conjugate gradient algorithm (2)
                 IBRION=2,
@@ -46,12 +46,12 @@ def less_precise_incar():
                 ISYM=0))
 
 
-def more_precise_incar():
+def more_precise_incar(struct):
     return(dict(LCHARG="True",
                 ENCUT=700,
                 PREC='Accurate',
                 EDIFFG=-1E-02,
-                EDIFF=1E-06 * s.num_sites,
+                EDIFF=1E-06 * struct.num_sites,
                 NSW=100,
                 # Close to the local minimum : RMM-DIIS (1)
                 IBRION=1,
@@ -137,66 +137,66 @@ def prompt_rerun_type():
 def main():
 
     # Set the parameters ofthe run
-    settingDir = platform_id.setting_dir()
+    setting_dir = platform_id.setting_dir()
 
     try:
-        mainDir = sys.argv[1]
+        main_dir = sys.argv[1]
     except IndexError:
-        mainDir = os.getcwd()
-        print("in current folder : {}".format(mainDir))
+        main_dir = os.getcwd()
+        print("in current folder : {}".format(main_dir))
 
     rerun_type, incar_type = prompt_rerun_type()
 
     rerun_select = input(
         "Rerun [a]ll / [n]on-converged only / [c] converged-only ? : ")
     # do not parse vasprun if all job selected
-    check_vaspRun = 0 if rerun_select in ["a"] else 0.9
+    check_vasprun = 0 if rerun_select in ["a"] else 0.9
 
     try:
-        fileSystem = input("[j]ob / [p]roject / [s]uper_project ?  :  ")[0]
+        file_system = input("[j]ob / [p]roject / [s]uper_project ?  :  ")[0]
     except Exception:
-        fileSystem = "p"
-    print("filesystem : {}".format(fileSystem))
+        file_system = "p"
+    print("filesystem : {}".format(file_system))
 
     # Create a list of all the valid runs in the selected folders
-    run_list = read.collect_valid_runs(mainDir, checkDiff=False,
-                                       vaspRun_parsing_lvl=check_vaspRun,
-                                       file_system_choice=fileSystem)
+    run_list = read.collect_valid_runs(main_dir, checkDiff=False,
+                                       vaspRun_parsing_lvl=check_vasprun,
+                                       file_system_choice=file_system)
 
     converged_jobs = [d for d in run_list if d.status == 3]
     unconverged_jobs = [d for d in run_list if d.status < 3]
 
     # when reruning all jobs, they are all considered as unconverged
     if rerun_select in ["a", "n"]:
-        rerunList = unconverged_jobs
+        rerun_list = unconverged_jobs
 
     elif rerun_select in ["c"]:
-        rerunList = converged_jobs
+        rerun_list = converged_jobs
 
     if input("apply further selection on runs ? : Y / n ") == "Y":
         if rerun_select in ["c"] and input(
                 "convex hull filtering ? : Y / n ") == "Y":
-            rerunList = read.generate_tags(rerunList, minimal=True)
-            rerunList = read.restrict_run_list(rerunList)
+            rerun_list = read.generate_tags(rerun_list, minimal=True)
+            rerun_list = read.restrict_run_list(rerun_list)
             print("selected runs : \n {}".format(
-                [print(runDict.id) for runDict in rerunList]))
+                [print(rundict.id) for rundict in rerun_list]))
 
         if input("folder by folder ? : Y / n ") == "Y":
-            rerun_list_tmp = rerunList
-            rerunList = []
+            rerun_list_tmp = rerun_list
+            rerun_list = []
             for run in rerun_list_tmp:
                 if input("include {} : Y / n ".format(run.id)) == "Y":
-                    rerunList.append(run)
-        print("nb of structures : {0} ".format(len(rerunList)))
+                    rerun_list.append(run)
+        print("nb of structures : {0} ".format(len(rerun_list)))
 
-    print("number of valid jobs to rerun : {}".format(len(rerunList)))
+    print("number of valid jobs to rerun : {}".format(len(rerun_list)))
 
-    if len(rerunList) == 0:
+    if len(rerun_list) == 0:
         print("no valid run")
         return(0)
 
     print("selected runs : \n {}".format(
-        [print(runDict.id) for runDict in rerunList]))
+        [print(rundict.id) for rundict in rerun_list]))
     try:
         perturb = eval(
             input('Perturb the initial position of atoms ? in Angstrom '))
@@ -221,52 +221,51 @@ def main():
             print("error, default dirname to {}".format(dirname))
         parcharg = True if input("parcharg?") == "Y" else False
 
-    if fileSystem in ["p", "s"]:
-        dirname_path = read.get_file_name(mainDir, dirname)
+    if file_system in ["p", "s"]:
+        dirname_path = read.get_file_name(main_dir, dirname)
 
-    for runDict in rerunList:
+    for rundict in rerun_list:
 
         # create Job from a RunDict
-        job = launch.Job.from_runDict(runDict)
+        job = launch.Job.from_runDict(rundict)
         # s = job.structure
 
-        if fileSystem == "j":
-            rerunDir = read.get_file_name(runDict.jobFolder, dirname)
+        if file_system == "j":
+            rerun_dir = read.get_file_name(rundict.jobFolder, dirname)
             job.explicit_jobpath = True
         else:
             job.explicit_jobpath = False
-            if fileSystem == "p":
-                rerunDir = dirname_path
-            if fileSystem == "s":
-                print(runDict.stacking)
-                rerunDir = os.path.join(dirname_path, runDict.stacking)
+            if file_system == "p":
+                rerun_dir = dirname_path
+            if file_system == "s":
+                print(rundict.stacking)
+                rerun_dir = os.path.join(dirname_path, rundict.stacking)
         job.oldFolder = job.jobFolder
-        job.set_jobFolder(rerunDir)
+        job.set_jobFolder(rerun_dir)
 
         if rerun_type == "identical":
             # quick and dirty copy
             os.makedirs(job.jobFolder, exist_ok=True)
-            for F in ['CONTCAR', 'POSCAR']:
+            for f_name in ['CONTCAR', 'POSCAR']:
                 try:
-                    shutil.copy2('{0.oldFolder}/{1}'.format(job, F),
+                    shutil.copy2('{0.oldFolder}/{1}'.format(job, f_name),
                                  '{0.jobFolder}/POSCAR'.format(job))
                     break
                 except Exception as ex:
                     pass
 
-            for F in ['INCAR', 'POTCAR', 'KPOINTS']:
+            for f_name in ['INCAR', 'POTCAR', 'KPOINTS']:
                 try:
-                    shutil.copy2('{0.oldFolder}/{1}'.format(job, F),
-                                 '{0.jobFolder}/{1}'.format(job, F))
+                    shutil.copy2('{0.oldFolder}/{1}'.format(job, f_name),
+                                 '{0.jobFolder}/{1}'.format(job, f_name))
                 except Exception as ex:
                     print(ex)
             print("identical set generated")
 
             continue
 
-        else:
-            incar = {}
-            files_to_copy = []
+        incar = {}
+        files_to_copy = []
 
         if rerun_type == "poscar_only":
             pass
@@ -284,11 +283,11 @@ def main():
         elif rerun_type == "relaxation":
 
             if incar_type == "less_precise":
-                incar.update(less_precise_incar())
+                incar.update(less_precise_incar(job.structure))
                 print(" less precise set generated")
 
             elif incar_type == "more_precise":
-                incar.update(more_precise_incar())
+                incar.update(more_precise_incar(job.structure))
                 print("more precise set generated")
 
             elif incar_type == "ultra_precise":
@@ -347,20 +346,21 @@ def main():
 
             # PARCHG
             # incar["LWAVE"] = "True"
+            incar['EDIFF'] = 1E-02
             incar["ISMEAR"] = -5
             incar["LCHARG"] = "False"
             incar["LAECHG"] = "False"
             incar["NELMDL"] = -10
             incar["PREC"] = "Accurate"
             incar["ADDGRID"] = "True"
-            incar["IBRION"] = 2
+            incar["IBRION"] = 1
             incar["NELM"] = 150
             kpt = Kpoints.gamma_automatic(kpts=(3, 3, 3), shift=(0, 0, 0))
             job.user_kpoint = kpt
             print("yolo!!")
 
             if parcharg:
-                efermi = runDict.data['efermi']
+                efermi = rundict.data['efermi']
                 print(efermi)
                 incar["LPARD"] = "True"
                 below_fermi = eval(input("Emin (Efermi=0) ?"))
@@ -387,13 +387,13 @@ def main():
 
         elif rerun_type == "single_point":
             if incar_type == "fukui":
-                inputSet = MITRelaxSet(job.structure)
-                incar = runDict.parameters["incar"]
-                incar["NELECT"] = inputSet.nelect + fukui_nelec
+                input_set = MITRelaxSet(job.structure)
+                incar = rundict.parameters["incar"]
+                incar["NELECT"] = input_set.nelect + fukui_nelec
                 incar["NSW"] = 0
                 print("fukui correction added :",
                       "\nNELECT read {} ==> wrote {}".format(
-                          inputSet.nelect, inputSet.nelect + fukui_nelec))
+                          input_set.nelect, input_set.nelect + fukui_nelec))
 
             elif incar_type in ["static", "DOS"]:
                 incar.update(single_point_incar())
@@ -433,8 +433,8 @@ def main():
                               })
                 for k in ["NELMDL", "MAGMOM"]:
                     job.user_incar.pop(k, None)
-                job.set_jobFolder(rerunDir)
-                kpt = drawkpt(runDict.structure)
+                job.set_jobFolder(rerun_dir)
+                kpt = drawkpt(rundict.structure)
                 kpt.write_file(os.path.join(
                     job.oldFolder, "linear_KPOINTS"))
                 # inputSet = MPNonSCFSet.from_prev_calc(
@@ -457,18 +457,18 @@ def main():
 
         job.structure.perturb(perturb)
         print("explicit jobpath", job.explicit_jobpath)
-        job.write_data_input(rerunDir)
+        job.write_data_input(rerun_dir)
 
-        for F in files_to_copy:
+        for f_name in files_to_copy:
             try:
-                shutil.copy2('{0.oldFolder}/{1}'.format(job, F),
-                             '{0.jobFolder}/{1}'.format(job, F))
+                shutil.copy2('{0.oldFolder}/{1}'.format(job, f_name),
+                             '{0.jobFolder}/{1}'.format(job, f_name))
             except Exception as ex:
-                print("error when copying", F, ex)
+                print("error when copying", f_name, ex)
 
     if input("[r]emove unconverged folders ? ") == "r":
-        for runDict in unconverged_jobs:
-            unconv_dir = runDict.oldFolder
+        for rundict in unconverged_jobs:
+            unconv_dir = rundict.oldFolder
             # if input("remove {0} ? Y / N ".format(unconv_dir))=="Y" :
             shutil.rmtree(unconv_dir)
             print("{0} deleted ".format(unconv_dir))
