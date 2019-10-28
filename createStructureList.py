@@ -152,7 +152,7 @@ def sodium_disorder(
     enum = st.PartialRemoveSitesTransformation(
         [list(indices)], [[fracRemoved]], algo=3)
     # print(" frac removed ({0}) x indices ({1}) = nb removed ({2})".format(fracRemoved, len(indices), nb_removed))
-    enumList = enum.fast_ordering(oxi,
+    enumList = enum._fast_ordering(oxi,
                                   num_remove_dict={indices: nb_removed},
                                   num_to_return=number_of_struct)
 
@@ -295,13 +295,15 @@ def trigonal_distortion(pristine, disto_max, nb_steps):
         s_copy = pristine.copy()
         n = i * (disto_max / nb_steps)
         for pair in pairs:
+
             s_copy = cluster.contract_OO_pairs(
-                s_copy, pair, disto=n, bailar=False, trigonal=True)
+                s_copy, pair, bailar_disto=False, trigonal_disto=True)
         distorted_pristine_list.append(
             {"structure": s_copy, "id": "_Dtrigo_{:.4f}".format(n)})
         print("Dtrigo_{}".format(n))
-
     return(distorted_pristine_list)
+
+
 
 
 def rotation_in_supercell(initialStruct,
@@ -488,7 +490,7 @@ def replace(pristineStruct, substSpecies=["Li", "Fe", "Ca"],
         substitued_struct = sd.SubstitutionTransformation(
             {"Mg": subst_specie}).apply_transformation(pristineStruct)
         struct_dict_list.append({'structure': substitued_struct,
-                                 'id': "".format(subst_specie)})
+                                 'id': "{}".format(subst_specie)})
     return struct_dict_list
 
 
