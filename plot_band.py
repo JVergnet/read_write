@@ -1,13 +1,16 @@
-from drawKpoints import drawkpt
-from matplotlib.collections import LineCollection
-import numpy as np
-from matplotlib import pyplot as plt
-from pymatgen.io.vasp import Vasprun
-# from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pymatgen.electronic_structure.core import Spin  # , OrbitalType
-import matplotlib.patches as mpatches
 import os
 import sys
+
+import matplotlib.patches as mpatches
+import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib.collections import LineCollection
+# from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+from pymatgen.electronic_structure.core import Spin  # , OrbitalType
+from pymatgen.io.vasp import Vasprun
+
+from drawKpoints import drawkpt
+
 # import matplotlib
 # matplotlib.use('TkAgg')
 

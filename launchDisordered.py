@@ -4,24 +4,24 @@
 # Creates VASP imput files for vasp in the folder projectName/jobFformula
 
 
-from pymatgen import Structure
-from pymatgen.io.vasp.sets import MPRelaxSet  # , MVLRelax52Set  # , MPStaticSet
-
-# from pymatgen.io.vasp.inputs import Incar
-# from pymatgen.core.composition import Composition
-from pymatgen.core.periodic_table import Element
-import createStructureList as create_list
+# import sys
+import json
 import os
 # import subprocess
 # import shutil
 import time
-# import sys
-import json
 from itertools import chain
-import numpy as np
-
 from multiprocessing import Pool, cpu_count
 
+import numpy as np
+from pymatgen import Structure
+# from pymatgen.io.vasp.inputs import Incar
+# from pymatgen.core.composition import Composition
+from pymatgen.core.periodic_table import Element
+from pymatgen.io.vasp.sets import \
+    MPRelaxSet  # , MVLRelax52Set  # , MPStaticSet
+
+import createStructureList as create_list
 import readRun_entries as read
 
 # Set the parameters ofthe run

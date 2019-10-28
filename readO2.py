@@ -3,21 +3,20 @@
 # read and write O2 release enthalpy related quantities
 
 
-# import matplotlib.pyplot as plt
-import readRun_entries as read
-
 import os
 import subprocess
 from multiprocessing import Pool, cpu_count
 from operator import itemgetter
 
+from pymatgen.io.vasp.outputs import Oszicar
+
+import generic_plot as generic_plot
 # import lobster_coop as lob
 import launchDisordered as launch
 # import read_hull as hull
 import platform_id
-import generic_plot as generic_plot
-
-from pymatgen.io.vasp.outputs import Oszicar
+# import matplotlib.pyplot as plt
+import readRun_entries as read
 
 
 def O2_computation(dosList, bader_done=False):
@@ -145,7 +144,7 @@ def get_O2_release_enthalpy(runDict):
                 f) for f in os.listdir(project_folder)]:
             # print(job_folder)
             run = read.collect_single_folder(job_folder)
-            if run['status'] >= 3:
+            if run.status >= 3:
                 run_list.append(run)
 
     if len(run_list) == 0:

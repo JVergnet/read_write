@@ -6,25 +6,26 @@
 # (static, relax or non scf)
 
 
+import os
+import shutil
+import sys
+
+from pymatgen.io.vasp.inputs import Kpoints
 # from pymatgen import Structure
 from pymatgen.io.vasp.sets import MITRelaxSet, MPNonSCFSet  # ,MPStaticSet,
+
+import launchDisordered as launch
+import platform_id
+import readRun_entries as read
 # from pymatgen.io.vasp.outputs import Vasprun
 # from pymatgen.io.vasp.inputs import Incar
 # from pymatgen.core.periodic_table import Element
 # import platform
 # import matplotlib
 from drawKpoints import drawkpt
-from pymatgen.io.vasp.inputs import Kpoints
 
-
-import launchDisordered as launch
-import readRun_entries as read
-import platform_id
 # import read_hull as hull
 
-import os
-import shutil
-import sys
 
 # if platform.node() in 'bipbip.lsd.univ-montp2.fr':
 #     matplotlib.use("Agg")

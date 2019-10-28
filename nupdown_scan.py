@@ -1,16 +1,24 @@
 # nupdown_scan.py
 
+from multiprocessing import Pool, cpu_count
+
+# import matplotlib.cm as cm
+# from matplotlib.colors import LogNorm
+import matplotlib.colors as colors
+import matplotlib.pyplot as plt
 # generric libraries
 import numpy as np
+# pymatgen libraries
+from pymatgen.io.vasp.outputs import Oszicar
 from scipy.interpolate import griddata
-# from skimage import measure
 
 # personnal libraries
 # import readRun_entries as read
 import generic_plot as generic_plot
 
-# pymatgen libraries
-from pymatgen.io.vasp.outputs import Oszicar
+# from skimage import measure
+
+
 try:
     # plotting libraries
     import plotly.offline as po
@@ -22,12 +30,7 @@ except Exception as ex:
     print(ex)
     plotly_available = False
 
-from multiprocessing import Pool, cpu_count
 
-import matplotlib.pyplot as plt
-# import matplotlib.cm as cm
-# from matplotlib.colors import LogNorm
-import matplotlib.colors as colors
 
 
 def get_mag_tag_list(vaspRunDictList):

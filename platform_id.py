@@ -1,7 +1,7 @@
 # platform_id.py
 
-import platform
 import os
+import platform
 from os.path import expanduser
 
 

@@ -1,10 +1,11 @@
-from __future__ import print_function, division, absolute_import
-from pylab import *
+from __future__ import absolute_import, division, print_function
+
+import os.path
 import time
 
 import matplotlib.backends
 import matplotlib.pyplot as p
-import os.path
+from pylab import *
 
 
 def is_backend_module(fname):

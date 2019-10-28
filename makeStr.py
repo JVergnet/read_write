@@ -1,7 +1,9 @@
 """This scripts produces the VASP style POSCAR."""
 from __future__ import print_function
-from termcolor import cprint
+
 import warnings
+
+from termcolor import cprint
 
 # The dictionary of all the elements on the periodic table
 all_elements = {

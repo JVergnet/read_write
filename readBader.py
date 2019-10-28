@@ -79,7 +79,7 @@ def do_bader_in_folder(folder):
             print("sucessfully removed previous bader files (CHG,CHGCAR,AECCAR) \n\n")
 
     except Exception as ex:
-        print("do_bader didnt work in folder {} : ".format(folder, ex))
+        print("do_bader failed in {} : {} : ".format(folder, ex))
 
     return(sucessful_bader)
 

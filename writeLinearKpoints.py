@@ -23,15 +23,15 @@ __email__ = "germain.vallverdu@univ-pau.fr"
 __licence__ = "GPL"
 __date__ = "April 2014"
 
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import sys
 import os
+import sys
 
+import matplotlib.pyplot as plt
 import pymatgen as mg
+from mpl_toolkits.mplot3d import Axes3D
+from pymatgen.io.vasp.inputs import Kpoints
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.symmetry.bandstructure import HighSymmKpath
-from pymatgen.io.vasp.inputs import Kpoints
 
 # default args
 fstruct = "POSCAR"

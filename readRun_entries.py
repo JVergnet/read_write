@@ -2,24 +2,39 @@
 # plots the projected DOS of all the vaspRun of the specified project
 # project/job/vasprun.xml
 # from pymatgen.io.vasp import Vasprun
-from pymatgen.io.vasp.inputs import Incar
-
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pymatgen.core.composition import Composition
-
-from pymatgen.entries.computed_entries import ComputedStructureEntry
-from pymatgen.apps.borg.hive import VaspToComputedEntryDrone,\
-    SimpleVaspToComputedEntryDrone
-
+# from zipfile import ZipFile
+import gzip
+import json
 # from pymatgen.electronic_structure.core import Spin, OrbitalType
 # import pymatgen.analysis.diffraction.xrd as xrd
 import logging
-from pymatgen.io.vasp.outputs import Oszicar  # Outcar
-# from pymatgen.core.structure import Structure
-
 # from matplotlib.collections import LineCollection
 import os
+import shutil
 import sys
+# import importlib
+import traceback
+import warnings
+from itertools import repeat
+# import subprocess
+from multiprocessing import Pool, cpu_count
+
+from pymatgen.apps.borg.hive import (SimpleVaspToComputedEntryDrone,
+                                     VaspToComputedEntryDrone)
+from pymatgen.core.composition import Composition
+from pymatgen.entries.computed_entries import ComputedStructureEntry
+from pymatgen.io.vasp.inputs import Incar
+from pymatgen.io.vasp.outputs import Oszicar  # Outcar
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
+
+import cluster
+import platform_id
+# import lobster_coop as lob
+# import generic_plot as generic_plot
+import read_hull as hull
+
+# from pymatgen.core.structure import Structure
+
 # import matplotlib
 
 # import matplotlib.pyplot as plt
@@ -27,22 +42,11 @@ import sys
 # from operator import itemgetter
 # import copy
 
-from itertools import repeat
 # import platform
 
-# import subprocess
-from multiprocessing import Pool, cpu_count
-# from zipfile import ZipFile
-import gzip
-import shutil
-import json
 
 
-import cluster
 
-# import lobster_coop as lob
-# import generic_plot as generic_plot
-import read_hull as hull
 # import bailar_twist as bailar
 # import readBader as bader
 # import readO2 as O2
@@ -51,10 +55,6 @@ import read_hull as hull
 # import nupdown_scan as nupdown
 # import launchDisordered as launch
 
-# import importlib
-import traceback
-import warnings
-import platform_id
 global PARAM
 
 # DICT of parameters to set to true or false.

@@ -1,25 +1,17 @@
 # generic_plot.py
 import copy
-import numpy as np
-import matplotlib.pyplot as plt
 import os
 
-
-import readRun_entries as read
-import read_hull as hull
-import platform_id
-
-
 import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.ticker import (AutoMinorLocator, FormatStrFormatter,
+                               FuncFormatter, MaxNLocator, MultipleLocator,
+                               StrMethodFormatter)
 
-
-from matplotlib.ticker import (
-    FormatStrFormatter,
-    AutoMinorLocator,
-    MultipleLocator,
-    MaxNLocator,
-    StrMethodFormatter,
-    FuncFormatter)
+import platform_id
+import read_hull as hull
+import readRun_entries as read
 
 
 def set_mpl_rc_params():

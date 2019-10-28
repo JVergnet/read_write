@@ -5,39 +5,36 @@
 # Creates VASP imput files for vasp in the folder projectName/jobFformula
 
 
-# from pymatgen.electronic_structure.core import Spin, OrbitalType
-from pymatgen.io.vasp.inputs import Incar
-from pymatgen.core.structure import Structure
+import importlib
+import os
 import re
-
-
-from pymatgen.io.vasp import Vasprun
+import shutil
+import subprocess
+import time
 
 # import matplotlib
 # matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
-
 import numpy as np
-from scipy.integrate import simps
-
+from pymatgen.core.structure import Structure
 # from operator import itemgetter
 from pymatgen.electronic_structure.cohp import CompleteCohp
 from pymatgen.electronic_structure.core import Spin
+from pymatgen.io.vasp import Vasprun
+# from pymatgen.electronic_structure.core import Spin, OrbitalType
+from pymatgen.io.vasp.inputs import Incar
+from scipy.integrate import simps
 
-import os
-import subprocess
-import shutil
-import time
-# import sys
-
-import importlib
-
-import readRun_entries as read
-import readO2 as O2
 import cluster as cluster
 import DOS_plot as DOS
-import platform_id
 import generic_plot
+import platform_id
+import readO2 as O2
+import readRun_entries as read
+
+# import sys
+
+
 
 """
     a) Générer un ficher de point K dans lequel la multiplicité de chaque point est 1.

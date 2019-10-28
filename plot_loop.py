@@ -1,25 +1,27 @@
 #!/usr/bin/env python3
+import importlib
+import os
 import sys
+import traceback
+
 import matplotlib
+import matplotlib.pyplot as plt
+
+import bailar_twist as bailar
+import DOS_plot as DOS
+import energy_surface as PES
+import generic_plot as generic_plot
+import lobster_coop as lob
+import nupdown_scan as nupdown
+import platform_id
+import read_hull as hull
+import readBader as bader
+import readO2 as O2
+import readRun_entries as read
+
 print(matplotlib.get_backend())
 print(sys.version)
 
-if True:
-    import lobster_coop as lob
-    import bailar_twist as bailar
-    import readBader as bader
-    import readO2 as O2
-    import DOS_plot as DOS
-    import read_hull as hull
-    import energy_surface as PES
-    import nupdown_scan as nupdown
-    import generic_plot as generic_plot
-    import readRun_entries as read
-    import importlib
-    import traceback
-    import matplotlib.pyplot as plt
-    import os
-    import platform_id
 
 
 settingDir = platform_id.setting_dir()
