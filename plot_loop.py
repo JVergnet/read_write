@@ -34,15 +34,10 @@ def generate_plot(run_list_all, input_graph_type=None, allow_filtering=True):
 
     filter_loop = True
 
-    # read.generate_tags(run_list_all, minimal=True)
-    all_runs_input = run_list_all
-
     while filter_loop:
 
-        # all_runs = all_runs_input
-
-        restricted_runs = read.restrict_run_list(all_runs_input) \
-            if allow_filtering else all_runs_input
+        restricted_runs = read.restrict_run_list(run_list_all) \
+            if allow_filtering else run_list_all
 
         print("nb runs : {}".format(len(restricted_runs)))
         if len(restricted_runs) == 0:
@@ -70,10 +65,11 @@ def generate_plot(run_list_all, input_graph_type=None, allow_filtering=True):
                 "Continue plotting with different filter ? [Y/n]") != "Y":
             filter_loop = False
 
-    return(True)
+    return True
 
 
-def general_plot_loop(restricted_runs, input_graph_type=None, chem_env_done=False, bader_done=False):
+def general_plot_loop(restricted_runs, input_graph_type=None,
+                      chem_env_done=False, bader_done=False):
     " switch between quit // analysis "
 
     plot_loop = True
@@ -214,12 +210,11 @@ if __name__ == '__main__':
 
     read.initialize()
 
-    vaspRunDictList = read.get_vasp_run_dict_list()
+    RUNDICT_LIST = read.get_vasp_run_dict_list()
 
-    nbRun = len(vaspRunDictList)
-    print("number of valid runs " + str(nbRun))
-    if nbRun == 0:
+    print("number of valid runs " + str(len(RUNDICT_LIST)))
+    if len(RUNDICT_LIST) == 0:
         print("no run to show, yow ! ")
         exit(1)
 
-    generate_plot(vaspRunDictList)
+    generate_plot(RUNDICT_LIST)
