@@ -241,14 +241,14 @@ def plot_DOS_on_axe(axe, rundict, Emin, Emax,
              fontsize=8)
 
 
-def plot_DOS(vaspRunDictList,
+def plot_DOS(rundict_list,
              spin_choice=None,
              DOS_choice=None,
              Erange=None,
              N_move_mean=None):
 
     # plot DOS or XRD for each structure in the vasprundictList
-    nbRun = len(vaspRunDictList)
+    nbRun = len(rundict_list)
 
     # OPTIONS
     # ========================
@@ -303,13 +303,13 @@ def plot_DOS(vaspRunDictList,
 
     fig = plt.figure(plotTitle, figsize=(20, 10))
 
-    fig.suptitle(vaspRunDictList[-1].jobFolder + "\n" +
-                 vaspRunDictList[-1].formula + "\n"
+    fig.suptitle(rundict_list[-1].job_folder + "\n" +
+                 rundict_list[-1].formula + "\n"
                  + plotTitle,
                  fontsize="large")
 
     fig = plt.figure(plotTitle, figsize=(20, 20))
-    # nbRun = len(vaspRunDictList)
+    # nbRun = len(rundict_list)
     if nbRun == 1:
         axes = [fig.add_subplot(111)]
     else:
@@ -318,7 +318,7 @@ def plot_DOS(vaspRunDictList,
 
     # defining common colors
     elements = []
-    for run in vaspRunDictList:
+    for run in rundict_list:
         elements += run.structure.composition.get_el_amt_dict().keys()
     elements = set(elements)
     print("elements : {}".format(elements))
@@ -334,7 +334,7 @@ def plot_DOS(vaspRunDictList,
     #                       "Mg": "xkcd:yellow orange",
     #                       "Na": "xkcd:vibrant green"}
 
-    for i, runDict in enumerate(vaspRunDictList):
+    for i, runDict in enumerate(rundict_list):
         plot_DOS_on_axe(axes[(nbRun - 1) - i],
                         runDict,
                         Emin,

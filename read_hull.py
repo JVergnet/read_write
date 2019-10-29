@@ -29,7 +29,7 @@ def generate_hull_entries(run_list, remove_extremes=False, coord="xNa"):
     sorted_entries = sorted(converged_entries,
                             key=lambda x: (
                                 getattr(x, coord),
-                                x.energy_per_FU))
+                                x.energy_per_fu))
 
     if remove_extremes is None and input(
             "REMOVE  extreme composition x=0 x=1 ?") == "Y":
@@ -58,12 +58,12 @@ def generate_hull_entries(run_list, remove_extremes=False, coord="xNa"):
     # compute the formation energy in meV
     # with respect to endmembers (x->0 & x->1)
     [[xNa0, Ex0], [xNa1, Ex1]] = [[getattr(clean_entries[i], attr)
-                                   for attr in [coord, "energy_per_FU"]]
+                                   for attr in [coord, "energy_per_fu"]]
                                   for i in [0, -1]]
     print([[xNa0, Ex0], [xNa1, Ex1]])
     for entry in sorted_entries:
         x = getattr(entry, coord)
-        entry.eform = (entry.energy_per_FU
+        entry.eform = (entry.energy_per_fu
                        - (x - xNa0) / (xNa1 - xNa0) * Ex1
                        - (xNa1 - x) / (xNa1 - xNa0) * Ex0) * 1000
     # print("sorted entries {0} \n\n clean entries {1}\n\n"
@@ -136,14 +136,14 @@ def plot_hull_graphs(sorted_entries, **kwargs):
         simple_energy_graph = False
     if simple_energy_graph:
         sorted_converged_entries = sorted(
-            converged_entries, key=lambda x: x.energy_per_FU)
+            converged_entries, key=lambda x: x.energy_per_fu)
         generic_plot.plot_structure_value_evolution(
             sorted_converged_entries,
-            prop_list=['energy_per_FU'],
+            prop_list=['energy_per_fu'],
             legend=None,
             xNa_coords=None)
         for s in sorted_converged_entries:
-            print("{} {}/n".format(s.id, s.energy_per_FU))
+            print("{} {}/n".format(s.id, s.energy_per_fu))
 
     if coord is not None:
         print("\n==== HULL GRAPHS ======\n")
@@ -282,8 +282,8 @@ def plot_voltage_curve(hull_entries):
     eNa = -2  # -1.47
     for i in range(0, len(hull_entries) - 1):
         dNa = hull_entries[i + 1].xNa - hull_entries[i].xNa
-        E1 = hull_entries[i].energy_per_FU
-        E2 = hull_entries[i + 1].energy_per_FU
+        E1 = hull_entries[i].energy_per_fu
+        E2 = hull_entries[i + 1].energy_per_fu
         # print("E1={0} \n E2={1} \n dNa = {2} \nV = -(E2-E1-eNa) = {3}"
         #     .format(E1,E2,dNa,-((E2-E1)/dNa-eNa)))
 

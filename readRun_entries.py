@@ -61,7 +61,6 @@ PARAM = {}
 PARAM['logFile'] = True  # wether to print a log file of the results
 PARAM['mainFolder'] = platform_id.setting_dir()
 PARAM['verbose'] = 0
-PARAM['generated_tags'] = False
 
 # DATA COLLECTION FUNCTIONS
 # =========================================
@@ -222,7 +221,7 @@ class Rundict(ComputedStructureEntry):
         d["@class"] = self.__class__.__name__
         d.update(dict(status=self.status,
                       status_string=self.status_string,
-                      jobFolder=self.job_folder,
+                      job_folder=self.job_folder,
                       stacking=self.stacking,
                       id=self.str_id,
                       # structure_data=self.structure_data.as_dict()
@@ -230,15 +229,15 @@ class Rundict(ComputedStructureEntry):
                       ))
         return d
 
-    def from_dict(cls, d):
-        dec = MontyDecoder()  # /!\ not implemented !!
-        return cls(dec.process_decoded(d["structure"]),
-                   d["energy"], d["correction"],
-                   parameters={k: dec.process_decoded(v)
-                               for k, v in d.get("parameters", {}).items()},
-                   data={k: dec.process_decoded(v)
-                         for k, v in d.get("data", {}).items()},
-                   entry_id=d.get("entry_id", None))
+    # def from_dict(cls, d):
+    #     dec = MontyDecoder()  # /!\ not implemented !!
+    #     return cls(dec.process_decoded(d["structure"]),
+    #                d["energy"], d["correction"],
+    #                parameters={k: dec.process_decoded(v)
+    #                            for k, v in d.get("parameters", {}).items()},
+    #                data={k: dec.process_decoded(v)
+    #                      for k, v in d.get("data", {}).items()},
+    #                entry_id=d.get("entry_id", None))
 
     @classmethod
     def from_structure(cls, structure, entry_id):
@@ -266,7 +265,7 @@ def if_file_exist_gz(folder, non_comp_file):
     return(os.path.exists(os.path.join(folder, non_comp_file)))
 
 
-def collect_single_folder(jobFolder, drone, vaspRun_parsing_lvl=1):
+def collect_single_folder(job_folder, drone, vaspRun_parsing_lvl=1):
     # status :
     # 0 : not a job folder
     # 1 : pre-run
@@ -280,9 +279,9 @@ def collect_single_folder(jobFolder, drone, vaspRun_parsing_lvl=1):
         if PARAM['verbose'] == 0:
             warnings.simplefilter("ignore")
         if vaspRun_parsing_lvl > 0.5:
-            if if_file_exist_gz(jobFolder, "vasprun.xml"):
+            if if_file_exist_gz(job_folder, "vasprun.xml"):
                 # try  unzip the vasprun
-                c_e = drone.assimilate(jobFolder)
+                c_e = drone.assimilate(job_folder)
                 if c_e is not None:
                     print(c_e.parameters['incar'])
                     status = 3 if c_e.data['converged'] else 2
@@ -290,10 +289,10 @@ def collect_single_folder(jobFolder, drone, vaspRun_parsing_lvl=1):
         if status <= 0:
             # try  unzip the whole dir
             c_e = SimpleVaspToComputedEntryDrone(
-                inc_structure=True).assimilate(jobFolder)
+                inc_structure=True).assimilate(job_folder)
             if c_e is not None:
                 incar = Incar.from_file(
-                    '{}/INCAR'.format(jobFolder)).as_dict()
+                    '{}/INCAR'.format(job_folder)).as_dict()
                 c_e.parameters.update({"incar": incar})
                 status = 2 if c_e.energy < 10000000 else 1
 
@@ -306,7 +305,7 @@ def collect_single_folder(jobFolder, drone, vaspRun_parsing_lvl=1):
                 c_e.parameters['incar'].pop(k, None)
             for file_name in ["param", "data"]:
                 file_path = os.path.join(
-                    jobFolder, '{}.json'.format(file_name))
+                    job_folder, '{}.json'.format(file_name))
                 try:
                     with open(file_path) as file_object:
                         # load file data into object
@@ -329,7 +328,7 @@ def collect_single_folder(jobFolder, drone, vaspRun_parsing_lvl=1):
             # print("run type changed to None")
             # print(c_e)
 
-    r = Rundict(c_e, status, jobFolder)
+    r = Rundict(c_e, status, job_folder)
 
     if PARAM["verbose"] > 0:
         print("sucessfully parsed : \n", r)
@@ -355,7 +354,7 @@ def collect_valid_runs(
     # it is added to the vaspRunList[]
     # Create a list of all the subfolder of the run
 
-    subDirList, file_system_choice = get_job_list(
+    sub_dir_list, file_system_choice = get_job_list(
         mainFolder, file_system_choice=file_system_choice)
 
     if vaspRun_parsing_lvl is None:
@@ -383,11 +382,11 @@ def collect_valid_runs(
     with Pool(processes=cpu_count()) as p:
         tmp_list = p.starmap(
             collect_single_folder, [
-                (d, drone, vaspRun_parsing_lvl) for d in subDirList])
+                (d, drone, vaspRun_parsing_lvl) for d in sub_dir_list])
         p.close()
         p.join()
 
-    tmp_list.sort(key=lambda x: x.jobFolder)
+    tmp_list.sort(key=lambda x: x.job_folder)
     # for d in tmp_list:
     #     print("{} / {} : {}".format(d.stacking, d.id,
     #                                 d.status_string))
@@ -413,40 +412,13 @@ def collect_valid_runs(
         valid_runs = [d for d in tmp_list if d.status > 0]
 
     # os.chdir(valid_runs)
-
+    print("\nnb of valid runs : {0}".format(len(valid_runs)))
+    for run in valid_runs:
+        print(run.name_tag, run.status_string)
     return(valid_runs)
 
 
-def collect_folder_list():
-    global PARAM
-
-    folder_list = [PARAM['mainFolder']]
-
-    # if param['graph_type'] == "hull":
-    #     add_folder = True
-    #     while add_folder:
-    #         secondFolder = input(
-    #             "Valid second folder path \n or C to continue \n")
-    #         if secondFolder == "C":
-    #             add_folder = False
-    #         elif (os.path.exists(secondFolder)):
-    #             folder_List.append(secondFolder)
-
-    return(folder_list)
-
-
-def get_vasp_run_dict_list():
-    folder_list = collect_folder_list()
-    rundict_list = []
-    for folder in folder_list:
-        rundict_list += collect_valid_runs(folder)
-    print("\nnb of valid runs : {0}".format(len(rundict_list)))
-    for run in rundict_list:
-        print(run.nameTag, run.status_string)
-    return(rundict_list)
-
-
-def sort_run(vaspRunDictList, sort_key="nelect"):
+def sort_run(rundict_list, sort_key="nelect"):
     # Sort the valid vasprun according to their energy
     if sort_key is None:
         sort_key = "energy_per_atom"
@@ -460,7 +432,7 @@ def sort_run(vaspRunDictList, sort_key="nelect"):
 
     print("sorting by {}".format(sort_key))
     sort = Sort()
-    sorted_run_list = sorted(vaspRunDictList,
+    sorted_run_list = sorted(rundict_list,
                              key=getattr(sort, sort_key))
     return(sorted_run_list)
 
@@ -469,7 +441,7 @@ def sort_run(vaspRunDictList, sort_key="nelect"):
 # ==========================================================================
 
 
-def generate_tags(vaspRunDictList, force=False, minimal=False):
+def generate_tags(rundict_list, force=False, minimal=False):
     global PARAM
 
     # TAG GENERATION =========================================================
@@ -483,18 +455,17 @@ def generate_tags(vaspRunDictList, force=False, minimal=False):
     # if the tags are already generated , skip this function (unless it's
     # forced)
     if PARAM['generated_tags'] and not force:
-        # print(vaspRunDictList)
-        return(vaspRunDictList)
+        # print(rundict_list)
+        return(rundict_list)
 
     vasp_run_poll = []
     with Pool(processes=cpu_count()) as p:
-        #        zip(vaspRunDictList, repeat(minimal))
+        #        zip(rundict_list, repeat(minimal))
         vasp_run_poll = p.starmap(
             get_tag_single_run, zip(
-                vaspRunDictList, repeat(minimal)))
+                rundict_list, repeat(minimal)))
         p.close()
         p.join()
-
     # print(vasp_run_poll)
 
     try:
@@ -506,7 +477,7 @@ def generate_tags(vaspRunDictList, force=False, minimal=False):
         logging.warning(
             "failed to sort by (xNa , Etot), fall back to (xNa, folder)")
         sorted_entries = sorted(
-            vasp_run_poll, key=lambda x: (x.xNa, x.jobFolder))
+            vasp_run_poll, key=lambda x: (x.xNa, x.job_folder))
 
     # Create a New "log" file with incremented name
     write_log_file(sorted_entries, PARAM['mainFolder'])
@@ -517,13 +488,13 @@ def generate_tags(vaspRunDictList, force=False, minimal=False):
     return(sorted_entries)
 
 
-def write_log_file(vaspRunDictList, logFolder):
+def write_log_file(rundict_list, logFolder):
 
     logFileName = get_file_name(PARAM['mainFolder'], "log")
     os.chdir(logFolder)
     # log_file = open(logFileName,"a")
 
-    for i, runDict in enumerate(vaspRunDictList):
+    for i, runDict in enumerate(rundict_list):
         message = (
             "\nNAME\n" +
             runDict['nameTag'] +
@@ -760,7 +731,7 @@ bad selection, please do it again
     return(restricted_idv_runs)
 
 
-def initialize():
+def initialize(working_dir):
     global PARAM
 
     # Check if we are on frodon
@@ -769,12 +740,7 @@ def initialize():
 
     # get the path to the "project folder"
     # (i.e. the common parent directory of all the jobs to plot)
-
-    if len(sys.argv) > 1:
-        PARAM['mainFolder'] = sys.argv[1]
-    else:
-        PARAM['mainFolder'] = os.getcwd()
-
+    PARAM['mainFolder'] = working_dir
     print("\nMain directory : \n{0} \n".format(PARAM['mainFolder']))
 
     print("\n preparing the run with the following parameters :\n{} \n\n".
@@ -786,18 +752,3 @@ def initialize():
 
     parameters = PARAM
     return(parameters)
-
-
-# if __name__ == '__main__':
-
-#     param = initialize()
-
-#     vaspRunDictList = get_vasp_run_dict_list()
-
-#     nbRun = len(vaspRunDictList)
-#     print("number of valid runs " + str(nbRun))
-#     if nbRun == 0:
-#         print("no run to show, yow ! ")
-#         exit(1)
-
-#     generate_plot(vaspRunDictList)

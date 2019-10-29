@@ -258,7 +258,7 @@ def COOP_from_folder(mainDir, bond="O_O"):
 # def COOP_from_runListDict(vasprunlistDict, bond="O_O"):
 #     for v in vasprunlistDict:
 #         # this entry may be None
-#         v.complete_coop = get_COOP_from_folder(v.jobFolder, bond=bond)
+#         v.complete_coop = get_COOP_from_folder(v.job_folder, bond=bond)
 
 #     return(vasprunlistDict)
 
@@ -498,7 +498,7 @@ def plot_COOP_OO(RunDict_list, sorting="oxidation"):
     for v in RunDict_list:
         v.coop_dict = {}
         for bond in bonds:
-            v.coop_dict[bond] = get_COOP_from_folder(v.jobFolder, bond=bond)
+            v.coop_dict[bond] = get_COOP_from_folder(v.job_folder, bond=bond)
 
     plot_dos = True
     dos_ax = 1 if plot_dos else 0
@@ -559,7 +559,7 @@ def plot_COOP_OO(RunDict_list, sorting="oxidation"):
 
         plt.show(block=False)
         generic_plot.save_fig(fig, "COOP_{}"
-                              .format(v.jobFolder.split("/")[-2]))
+                              .format(v.job_folder.split("/")[-2]))
 
 # # =========================
 #     # for bond in bonds:
@@ -572,7 +572,7 @@ def plot_COOP_OO(RunDict_list, sorting="oxidation"):
 #             axes = fig.subplots(len(complete_coop_list), 1, sharex="col")
 #             fig.subplots_adjust(hspace=0)
 
-#         runList = COOP_from_runListDict(vaspRunDictList, bond=bond)
+#         runList = COOP_from_runListDict(rundict_list, bond=bond)
 #         valid_coop_runs = [v for v in runList if v.complete_coop is not None]
 
     # def plot_coop_list(complete_coop_list, axes=None):

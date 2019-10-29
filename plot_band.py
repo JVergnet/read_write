@@ -140,8 +140,8 @@ def plotband(bandV, kpt_path="KPOINTS"):
 
 
 if __name__ == '__main__':
-    jobFolder = sys.argv[1]
-    os.chdir(jobFolder)
-    print("parsing vasprun in {0}".format(jobFolder))
+    job_folder = sys.argv[1]
+    os.chdir(job_folder)
+    print("parsing vasprun in {0}".format(job_folder))
     bandV = Vasprun("vasprun.xml", parse_projected_eigen=True)
     plotband(bandV)

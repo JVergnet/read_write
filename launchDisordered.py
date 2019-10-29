@@ -57,11 +57,11 @@ class Job(MPRelaxSet):
 
     def __init__(self, structure, entry_id,
                  user_param={}, user_incar=None,
-                 jobFolder="", **kwargs):
+                 job_folder="", **kwargs):
         # super().__init__(structure)
         self.explicit_jobpath = False
         self.entry_id = entry_id
-        self.jobFolder = jobFolder
+        self.job_folder = job_folder
         # print(structure)
 
         self.user_kpoint = {'reciprocal_density': 100}
@@ -94,11 +94,11 @@ class Job(MPRelaxSet):
         self.jobName = self.jobName.replace(' ', '-').replace('.', '')
         return(self.jobName)
 
-    def set_jobFolder(self, parent_path):
+    def set_job_folder(self, parent_path):
         self.set_jobName()
-        self.jobFolder = parent_path if self.explicit_jobpath \
+        self.job_folder = parent_path if self.explicit_jobpath \
             else os.path.join(parent_path, self.jobName)
-        return(self.jobFolder)
+        return(self.job_folder)
 
     def write_data_input(self, parent_path, explicit_jobpath=None):
         if explicit_jobpath is not None:
@@ -119,11 +119,11 @@ class Job(MPRelaxSet):
                          potcar_functional='PBE_54',
                          )
         # print("POTCAR FUNCTIONNAL :", self.potcar_functional)
-        self.set_jobFolder(parent_path)
-        self.write_input(self.jobFolder)
+        self.set_job_folder(parent_path)
+        self.write_input(self.job_folder)
 
         if len(self.user_param) > 0:
-            # we also dump the data of the run into the jobFolder
+            # we also dump the data of the run into the job_folder
             print(json.dumps(self.user_param))
             with open('{}/param.json'.format(path), 'w') as outfile:
                 json.dump(self.user_param, outfile)
@@ -132,7 +132,7 @@ class Job(MPRelaxSet):
         return(Job(self.structure.copy(), self.entry_id,
                    user_param=dict(self.user_param),
                    user_incar=dict(self.user_incar),
-                   jobFolder=self.jobFolder))
+                   job_folder=self.job_folder))
 
     def copy_w_new_struct(self, structure, new_id="", id_mode="add"):
         id = ""
@@ -143,17 +143,17 @@ class Job(MPRelaxSet):
         return(Job(structure.copy(), id,
                    user_param=dict(self.user_param),
                    user_incar=dict(self.user_incar),
-                   jobFolder=self.jobFolder))
+                   job_folder=self.job_folder))
 
     @classmethod
     def from_runDict(cls, runDict,  newFolder=None):
         job = Job(runDict.structure, runDict.id,
                   user_param=dict(runDict.parameters.get('custom', {})),
                   user_incar=dict(runDict.parameters['incar']),
-                  jobFolder=runDict.jobFolder)
+                  job_folder=runDict.job_folder)
         if newFolder is not None:
-            job.oldFolder = job.jobFolder
-            job.set_jobFolder(newFolder)
+            job.oldFolder = job.job_folder
+            job.set_job_folder(newFolder)
         return(job)
 
 
@@ -410,7 +410,7 @@ def generate_job_folders(
     for i, job in enumerate(final_job_list):
         job.write_data_input(projectDir)
 
-        print("set written in {}".format(job.jobFolder))
+        print("set written in {}".format(job.job_folder))
 
         folder_list += []
 

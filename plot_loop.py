@@ -44,7 +44,7 @@ def generate_plot(run_list_all, input_graph_type=None, allow_filtering=True):
             print("no enough runs ! ")
         else:
             print("============= PRE-TREATMENT OF DATA ====================")
-
+            bader_done = False
             if input("generate bader tags ? : Y/n  : ") == "Y":
                 bader_done = bader.get_bader_tags(restricted_runs)
 
@@ -208,9 +208,14 @@ def ask_graph_type(graph_type=None):
 
 if __name__ == '__main__':
 
-    read.initialize()
+    if len(sys.argv) > 1:
+        working_dir = sys.argv[1]
+    else:
+        working_dir = os.getcwd()
 
-    RUNDICT_LIST = read.get_vasp_run_dict_list()
+    read.initialize(working_dir)
+
+    RUNDICT_LIST = read.collect_valid_runs(working_dir)
 
     print("number of valid runs " + str(len(RUNDICT_LIST)))
     if len(RUNDICT_LIST) == 0:

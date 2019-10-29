@@ -44,7 +44,7 @@ def get_mag_tag_list(rundict_list):
 
 def get_mag_tag_single(rundict):
     if not hasattr(rundict, "mag"):
-        rundict.mag = Oszicar(rundict.jobFolder + "/OSZICAR"
+        rundict.mag = Oszicar(rundict.job_folder + "/OSZICAR"
                               ).ionic_steps[-1]["mag"] /\
             rundict.nb_cell
     return(rundict)
@@ -60,7 +60,7 @@ def plot_mag_graphs(rundict_list):
             key=lambda k: (
                 k.xNa,
                 k.mag,
-                k.energy_per_FU))
+                k.energy_per_fu))
         selected_runs = [sorted_runs[0]]
         for r in sorted_runs:
             if r.mag != selected_runs[-1].mag or r.xNa != selected_runs[-1].xNa:
@@ -102,12 +102,12 @@ def plot_nelect_heatmap(input_rundict_list):
     # define a vertical slice : all structure with same NELECT (x axis)
     for nelect in {d.nelect for d in rundict_list}:
         struct_list_slice = [d for d in rundict_list if d.nelect == nelect]
-        e_min = min([d.energy_per_FU for d in struct_list_slice])
+        e_min = min([d.energy_per_fu for d in struct_list_slice])
         print(" nelect={} :  {} runs, E min = {:.2f} ".
               format(nelect, len(struct_list_slice), e_min))
 
         for d in struct_list_slice:
-            d.e_valley = (d.energy_per_FU - e_min)  # in meV
+            d.e_valley = (d.energy_per_fu - e_min)  # in meV
 
     x_y_e = np.array([[d.nelect, d.doo, d.e_valley] for d in rundict_list])
     # XYE =  np.flipud( XYE)
@@ -182,14 +182,14 @@ def plot_mag_heatmap(input_rundict_list):
 
     for x_na in set([d.xNa for d in rundict_list]):
         struct_list_slice = [d for d in rundict_list if d.xNa == x_na]
-        e_min = min([d.energy_per_FU for d in struct_list_slice])
+        e_min = min([d.energy_per_fu for d in struct_list_slice])
         print(
             " xNa ={} :  {} runs, E min = {:.2f} ".format(
                 x_na,
                 len(struct_list_slice),
                 e_min))
         for d in struct_list_slice:
-            d.e_valley = 1000 * (d.energy_per_FU - e_min)
+            d.e_valley = 1000 * (d.energy_per_fu - e_min)
 
     x_y_e = np.array([[d.xNa, d.mag, d.e_valley] for d in rundict_list])
     # XYE =  np.flipud( XYE)
@@ -348,12 +348,12 @@ def plot_mag_surface(rundict_list, colorcode="O_mag"):
     mag_list = rundict_list
     for x_na in set([d.xNa for d in mag_list]):
         struct_list_slice = [d for d in mag_list if d.xNa == x_na]
-        e_min = min([d.energy_per_FU for d in struct_list_slice])
+        e_min = min([d.energy_per_fu for d in struct_list_slice])
         print(
             " xNa ={} :  {} runs, E min = {:.2f} ".format(
                 x_na, len(struct_list_slice), e_min))
         for d in struct_list_slice:
-            d.e_valley = 1000 * (d.energy_per_FU - e_min)
+            d.e_valley = 1000 * (d.energy_per_fu - e_min)
 
     x_y_e = np.array([[d.xNa, d.mag, d.e_valley]
                       for d in mag_list if d.status >= 3])

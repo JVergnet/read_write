@@ -394,6 +394,7 @@ def measure_quadruplet_angles_old(struct, MMOO):
     # print( bailar_angle, trigonal_length)
     return(bailar_angle, trigonal_length)
 
+
 def get_coord(struct, O1, index):
     d, jimage = struct[O1].distance_and_image(struct[index], jimage=None)
     return(struct.lattice.get_cartesian_coords(
@@ -707,7 +708,7 @@ def plot_structure_graphs(runList, chem_env_done):
                     d.dOO_min >= x and d.dOO_min < (x + binsize))]
                 if len(run_in_bin) > 0:
                     run_in_bin = sorted(
-                        run_in_bin, key=lambda x: x.energy_per_FU)
+                        run_in_bin, key=lambda x: x.energy_per_fu)
                     print("doo : {:.2f} to {:.2f} : \n \
                     most stable : {} Ediff = {:.2f} among {}".format(x,
                                                                      x + binsize,

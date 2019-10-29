@@ -213,7 +213,7 @@ def get_madelung_tag_single(runDict, force=False, verbose=0, oxi_int=False):
     if not force and struct_data[0].properties.get("E_mad", None) is not None:
         print("skipping")
         return(True)
-    poscar, potcar = [p.from_file(runDict.jobFolder+f) for (p, f) in
+    poscar, potcar = [p.from_file(runDict.job_folder+f) for (p, f) in
                       [(Poscar, "/POSCAR"), (Potcar, "/POTCAR")]]
     s_dict = {}
     if verbose > 0:
@@ -273,7 +273,7 @@ def get_bader_tag_single(runDict):
     # to fill the fields charge and magnetization
 
     if hasattr(runDict, "mag"):
-        bader_array = get_bader_charges_and_magmoms(runDict.jobFolder)
+        bader_array = get_bader_charges_and_magmoms(runDict.job_folder)
         # bader_array[i] = (bader_charges,charge_vol,bader_magmom,magmom_vol)
         if bader_array is not None:
             for j, prop in enumerate(

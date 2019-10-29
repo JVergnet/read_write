@@ -231,7 +231,7 @@ def main():
         # s = job.structure
 
         if file_system == "j":
-            rerun_dir = read.get_file_name(rundict.jobFolder, dirname)
+            rerun_dir = read.get_file_name(rundict.job_folder, dirname)
             job.explicit_jobpath = True
         else:
             job.explicit_jobpath = False
@@ -240,16 +240,16 @@ def main():
             if file_system == "s":
                 print(rundict.stacking)
                 rerun_dir = os.path.join(dirname_path, rundict.stacking)
-        job.oldFolder = job.jobFolder
-        job.set_jobFolder(rerun_dir)
+        job.oldFolder = job.job_folder
+        job.set_job_folder(rerun_dir)
 
         if rerun_type == "identical":
             # quick and dirty copy
-            os.makedirs(job.jobFolder, exist_ok=True)
+            os.makedirs(job.job_folder, exist_ok=True)
             for f_name in ['CONTCAR', 'POSCAR']:
                 try:
                     shutil.copy2('{0.oldFolder}/{1}'.format(job, f_name),
-                                 '{0.jobFolder}/POSCAR'.format(job))
+                                 '{0.job_folder}/POSCAR'.format(job))
                     break
                 except Exception as ex:
                     pass
@@ -257,7 +257,7 @@ def main():
             for f_name in ['INCAR', 'POTCAR', 'KPOINTS']:
                 try:
                     shutil.copy2('{0.oldFolder}/{1}'.format(job, f_name),
-                                 '{0.jobFolder}/{1}'.format(job, f_name))
+                                 '{0.job_folder}/{1}'.format(job, f_name))
                 except Exception as ex:
                     print(ex)
             print("identical set generated")
@@ -377,12 +377,12 @@ def main():
                 files_to_copy.append("WAVECAR")
 
             # if fileSystem == "j":
-            #     rerunDir = read.get_file_name(runDict.jobFolder, dirname)
+            #     rerunDir = read.get_file_name(runDict.job_folder, dirname)
             # else:
             #     rerunDir = read.get_file_name(mainDir, dirname)
             #     if fileSystem == "s":
             #         rerunDir = os.path.join(rerunDir, runDict.stacking)
-            # job.set_jobFolder(rerunDir)
+            # job.set_job_folder(rerunDir)
             print("{} set generated".format(dirname))
 
         elif rerun_type == "single_point":
@@ -433,7 +433,7 @@ def main():
                               })
                 for k in ["NELMDL", "MAGMOM"]:
                     job.user_incar.pop(k, None)
-                job.set_jobFolder(rerun_dir)
+                job.set_job_folder(rerun_dir)
                 kpt = drawkpt(rundict.structure)
                 kpt.write_file(os.path.join(
                     job.oldFolder, "linear_KPOINTS"))
@@ -462,7 +462,7 @@ def main():
         for f_name in files_to_copy:
             try:
                 shutil.copy2('{0.oldFolder}/{1}'.format(job, f_name),
-                             '{0.jobFolder}/{1}'.format(job, f_name))
+                             '{0.job_folder}/{1}'.format(job, f_name))
             except Exception as ex:
                 print("error when copying", f_name, ex)
 
