@@ -1,20 +1,21 @@
 # energy_surface.py
 
 import importlib
-import os
-import subprocess
-import sys
+# import os
+# import subprocess
+# import sys
 from operator import itemgetter
 
 import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D, axes3d
-from scipy.interpolate import griddata
+from mpl_toolkits.mplot3d import Axes3D  # , axes3d
+# from scipy.interpolate import griddata
 
 import bailar_twist as bailar
 import PES_complex_plot as PES_complex_plot
 import read_hull as hull
 import readRun_entries as read
+import generic_plot
 
 
 def plot_scatter_mesh_cell_shape(struct_list):
@@ -66,8 +67,7 @@ def plot_scatter_mesh_cell_shape(struct_list):
     ax2.set_zlabel("Volume")
 #    fig2.legend()
     plt.show(block=False)
-
-    read.save_fig(fig, "scatter surface", save_mode=None, folder=None)
+    generic_plot.save_fig(fig, "scatter surface", save_mode=None, folder=None)
 
 
 def plot_scatter_surface(
@@ -103,7 +103,7 @@ def plot_scatter_surface(
 
     plt.show(block=False)
 
-    read.save_fig(fig, "scatter surface", save_mode=None, folder=None)
+    generic_plot.save_fig(fig, "scatter surface", save_mode=None, folder=None)
 
     return(fig)
 

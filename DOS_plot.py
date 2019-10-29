@@ -19,7 +19,7 @@ import generic_plot as generic_plot
 
 def DOS_per_site(runDict, spin):
 
-    specCount = {}
+    spec_count = {}
     structure = runDict.structure
 
     # each type of atom has a differnt colormap
@@ -27,57 +27,57 @@ def DOS_per_site(runDict, spin):
     # have similar  colors
 
     # first get the number of sites per element
-    for siteDict in runDict.equivSiteList:
-        eltName = siteDict['element']
-        if specCount.get(eltName, None) is None:
-            specCount[eltName] = 0
-        specCount[eltName] += 1
+    for site_dict in runDict.equivSiteList:
+        elt_name = site_dict['element']
+        if spec_count.get(elt_name, None) is None:
+            spec_count[elt_name] = 0
+        spec_count[elt_name] += 1
 
-    print(specCount)
+    print(spec_count)
 
     cmap_colors = ['Blues', 'Greens', 'Purples', 'Reds', 'Greys', 'Oranges']
     cmaps = [plt.get_cmap(s) for s in cmap_colors]
     cmap_list = {}
-    for eltName, cmap in zip(specCount.keys(), cmaps):
-        L = np.linspace(0.8, 0.45, specCount[eltName]) \
-            if specCount[eltName] > 1 else [0.7]
-        cmap_list[eltName] = cmap(L)
+    for elt_name, cmap in zip(spec_count.keys(), cmaps):
+        L = np.linspace(0.8, 0.45, spec_count[elt_name]) \
+            if spec_count[elt_name] > 1 else [0.7]
+        cmap_list[elt_name] = cmap(L)
     densities = {}
     colors = {}
-    for siteDict in runDict.equivSiteList:
-        eltName = siteDict['element']
-        leg = "{0}:{1} (x{2})".format(eltName,
-                                      siteDict['mainIndex'],
-                                      siteDict['multiplicity'])
+    for site_dict in runDict.equivSiteList:
+        elt_name = site_dict['element']
+        leg = "{0}:{1} (x{2})".format(elt_name,
+                                      site_dict['mainIndex'],
+                                      site_dict['multiplicity'])
         site_dos = runDict.data["complete_dos"].get_site_dos(
-            structure[siteDict['mainIndex']])
-        value = site_dos.densities[spin] * siteDict['multiplicity']
+            structure[site_dict['mainIndex']])
+        value = site_dos.densities[spin] * site_dict['multiplicity']
         densities[leg] = value
-        specCount[eltName] -= 1
-        colors[leg] = cmap_list[eltName][specCount[eltName]]
+        spec_count[elt_name] -= 1
+        colors[leg] = cmap_list[elt_name][spec_count[elt_name]]
 
     return(densities, colors)
 
 
-def DOS_on_index(runDict, spin, index_list):
+def DOS_on_index(rundict, spin, index_list):
     densities = {}
-    s = runDict.structure
+    struct = rundict.structure
     colors = {}
     cmap = plt.get_cmap('nipy_spectral')
     color_list = cmap(np.linspace(0.5, 0.1, len(index_list)))
     for index in index_list:
-        leg = "atom {} ({})".format(index, s[index].species_string)
-        site_dos = runDict.data["complete_dos"].get_site_dos(
-            s[index]).densities[spin]
+        leg = "atom {} ({})".format(index, struct[index].species_string)
+        site_dos = rundict.data["complete_dos"].get_site_dos(
+            struct[index]).densities[spin]
         densities[leg] = site_dos
         colors[leg] = color_list[index]
 
     return (densities, colors)
 
 
-def DOS_spd(runDict, spin):
+def DOS_spd(rundict, spin):
     # dict of {orbital:DOS}
-    spd_dos = runDict.data["complete_dos"].get_spd_dos()
+    spd_dos = rundict.data["complete_dos"].get_spd_dos()
     densities = {"s": spd_dos[OrbitalType.s].densities[spin],
                  "p": spd_dos[OrbitalType.p].densities[spin],
                  "d": spd_dos[OrbitalType.d].densities[spin]}
@@ -86,8 +86,8 @@ def DOS_spd(runDict, spin):
     return(densities, colors)
 
 
-def DOS_per_elt(runDict, spin, pre_defined_colors=None):
-    elt_dos = runDict.data["complete_dos"].get_element_dos()
+def DOS_per_elt(rundict, spin, pre_defined_colors=None):
+    elt_dos = rundict.data["complete_dos"].get_element_dos()
     densities = {}
     element_list = elt_dos.keys()
     # print([ e.symbol for e in element_list])
@@ -106,13 +106,13 @@ def DOS_per_elt(runDict, spin, pre_defined_colors=None):
     return(densities, colors)
 
 
-def DOS_total(runDict, spin):
-    densities = {"total dos": runDict.data["tdos"].densities[spin]}
+def DOS_total(rundict, spin):
+    densities = {"total dos": rundict.data["tdos"].densities[spin]}
     colors = {"total dos": (0, 0, 0, 1)}  # black
     return(densities, colors)
 
 
-def plot_DOS_on_axe(axe, runDict, Emin, Emax,
+def plot_DOS_on_axe(axe, rundict, Emin, Emax,
                     DOS_choice="total",
                     spin_choice=1,
                     doo_projected=False,
@@ -121,14 +121,14 @@ def plot_DOS_on_axe(axe, runDict, Emin, Emax,
 
     # v = runDict['vaspRun']
     [ymin, ymax] = [0, 0]
-    E = runDict.data["tdos"].energies - runDict.data["efermi"]
-    indMin = 0
-    indMax = 0
+    E = rundict.data["tdos"].energies - rundict.data["efermi"]
+    ind_min = 0
+    ind_max = 0
     for q, e in enumerate(E):
         if e < Emin:
-            indMin = q
+            ind_min = q
         if e < Emax:
-            indMax = q
+            ind_max = q
     # XRD / DOS PLOTTING =====================================================
     # Generation of the graph XRD or DOS of the current structure
     # if param['graph_type'] == 'DOS' :
@@ -141,19 +141,19 @@ def plot_DOS_on_axe(axe, runDict, Emin, Emax,
     for s in [Spin.up, Spin.down]:
        # projection on S, P and D orbitals
         if DOS_choice == "spd":
-            (spin_densities, colors) = DOS_spd(runDict, s)
+            (spin_densities, colors) = DOS_spd(rundict, s)
 
         # Projection on each weighted non-equivalent site
         elif DOS_choice == "perSite":
-            (spin_densities, colors) = DOS_per_site(runDict, s)
+            (spin_densities, colors) = DOS_per_site(rundict, s)
         # Projection on elements
         elif DOS_choice == "perElt":
-            (spin_densities, colors) = DOS_per_elt(runDict, s,
+            (spin_densities, colors) = DOS_per_elt(rundict, s,
                                                    pre_defined_colors=pre_defined_colors)
 
         # total DOS (default)
         else:
-            (spin_densities, colors) = DOS_total(runDict, s)
+            (spin_densities, colors) = DOS_total(rundict, s)
 
         # list of dict {label : Y values of dos }
         # spin_array=[[Spin.up],[Spin.down],[Spin.up,Spin.down]]
@@ -161,7 +161,7 @@ def plot_DOS_on_axe(axe, runDict, Emin, Emax,
         # plot projected orbitals on O in peroxo like bonds
         if doo_projected:
             (index_spin_densities, colors_site) = DOS_on_index(
-                runDict, s, runDict.dOO_min_indices)
+                rundict, s, rundict.dOO_min_indices)
             spin_densities.update(index_spin_densities)
             colors.update(colors_site)
 
@@ -169,11 +169,11 @@ def plot_DOS_on_axe(axe, runDict, Emin, Emax,
     # print("densities : \n {} \n colors : \n {}"
     #       .format(densities_list,colors ))
 
-    def move_mean(x, N_input):
-        if N_input == 1:
+    def move_mean(x, n_input):
+        if n_input == 1:
             return(x)
         else:
-            half = np.ceil(N_input) // 2
+            half = np.ceil(n_input) // 2
             N = half * 2 + 1
             cumsum = np.cumsum(np.insert(x, 0, 0))
             s = (cumsum[N:] - cumsum[:-N]) / float(N)
@@ -181,15 +181,15 @@ def plot_DOS_on_axe(axe, runDict, Emin, Emax,
             s = np.insert(s, 0, x[0]*np.ones(half))
             return(s)
 
-    if spin_choice is 0:  # spin up & down
+    if spin_choice == 0:  # spin up & down
         for n, key in enumerate(densities_list[0].keys()):
             dos_up = move_mean(densities_list[0][key], N_move_mean)
             axe.plot(E, dos_up, color=colors[key], label=key, lw=2)
             dos_down = -move_mean(densities_list[1][key], N_move_mean)
             axe.plot(E, dos_down, color=colors[key], lw=2)
 
-            ymax = max(ymax, max(dos_up[indMin:indMax]))
-            ymin = min(ymin, min(dos_down[indMin:indMax]))
+            ymax = max(ymax, max(dos_up[ind_min:ind_max]))
+            ymin = min(ymin, min(dos_down[ind_min:ind_max]))
 
     else:
         if spin_choice is 1:  # sum of up + down
@@ -202,8 +202,8 @@ def plot_DOS_on_axe(axe, runDict, Emin, Emax,
                 densities_list[0][key] + a * densities_list[1][key],
                 N_move_mean)
 
-            ymax = max(ymax, max(dos[indMin:indMax]))
-            ymin = min(ymin, min(dos[indMin:indMax]))
+            ymax = max(ymax, max(dos[ind_min:ind_max]))
+            ymin = min(ymin, min(dos[ind_min:ind_max]))
 
             axe.plot(E, dos, color=colors[key], label=key, lw=2)
 
@@ -230,12 +230,12 @@ def plot_DOS_on_axe(axe, runDict, Emin, Emax,
 
     # Print the name and energy Tags on the left of the graph
     legend = "{} Na{}\n({})".format(
-        runDict.stacking, runDict.xNa, runDict.id)
+        rundict.stacking, rundict.xNa, rundict.id)
     axe.text(-0.03, 0.5, legend,
              horizontalalignment='right', verticalalignment='center',
              multialignment='right', transform=axe.transAxes)
     # Print the structure tag  on the right of the graph
-    axe.text(1.03, 0.5, runDict.spacegroup,
+    axe.text(1.03, 0.5, rundict.spacegroup,
              horizontalalignment='left', verticalalignment='center',
              multialignment='left', transform=axe.transAxes,
              fontsize=8)
@@ -259,16 +259,16 @@ def plot_DOS(vaspRunDictList,
     if spin_choice is None:
         spin_choice = 0
         try:
-            spin_choice = eval(
+            spin_choice = int(
                 input("0 = up & down , 1 = summ, 2 = diff  \nSpin type ? "))
-        except BaseException:
+        except Exception:
             print("spin to default : spin up & down")
 
     # graph type choice
     DOS_OPTION = ["spd", "perSite", "perElt", "total"]
     while DOS_choice is None:
         try:
-            DOS_choice = DOS_OPTION[eval(input(
+            DOS_choice = DOS_OPTION[int(input(
                 "DOS type option : {0} \nEnter DOS type number : \n"
                 .format(DOS_OPTION)))]
         except Exception as ex:
@@ -285,12 +285,12 @@ def plot_DOS(vaspRunDictList,
         [Emin, Emax] = [-3, 3]
         if input("change default energy range [{},{}] ? Y / N "
                  .format(Emin, Emax)) == "Y":
-            Emin = eval(input("Emin : "))
-            Emax = eval(input("Emax : "))
+            Emin = float(input("Emin : "))
+            Emax = float(input("Emax : "))
     if N_move_mean is None:
         try:
             N_move_mean = int(
-                eval(input("running mean window ? (default to None)")))
+                int(input("running mean window ? (default to None)")))
         except Exception as ex:
             N_move_mean = 1
 
