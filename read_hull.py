@@ -58,8 +58,8 @@ def generate_hull_entries(run_list, remove_extremes=False, coord="x_na"):
     # compute the formation energy in meV
     # with respect to endmembers (x->0 & x->1)
     [[x_na0, Ex0], [x_na1, Ex1]] = [[getattr(clean_entries[i], attr)
-                                   for attr in [coord, "energy_per_fu"]]
-                                  for i in [0, -1]]
+                                     for attr in [coord, "energy_per_fu"]]
+                                    for i in [0, -1]]
     print([[x_na0, Ex0], [x_na1, Ex1]])
     for entry in sorted_entries:
         x = getattr(entry, coord)
@@ -73,11 +73,10 @@ def generate_hull_entries(run_list, remove_extremes=False, coord="x_na"):
     # =============================================
     # Select structures that lie on the convex hull
 
-    """
-from scipy.spatial import ConvexHull
-hull = ConvexHull(points)
-hull_pts = points[hull.vertices,0], points[hull.vertices,1]
-"""
+
+# from scipy.spatial import ConvexHull
+# hull = ConvexHull(points)
+# hull_pts = points[hull.vertices,0], points[hull.vertices,1]
 
     current_index = 0
     hull_entries = [clean_entries[current_index]]

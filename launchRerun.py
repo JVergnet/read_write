@@ -176,7 +176,6 @@ def main():
     if input("apply further selection on runs ? : Y / n ") == "Y":
         if rerun_select in ["c"] and input(
                 "convex hull filtering ? : Y / n ") == "Y":
-            rerun_list = read.generate_tags(rerun_list, minimal=True)
             rerun_list = read.restrict_run_list(rerun_list)
             print("selected runs : \n {}".format(
                 [print(rundict.id) for rundict in rerun_list]))
@@ -227,7 +226,7 @@ def main():
     for rundict in rerun_list:
 
         # create Job from a RunDict
-        job = launch.Job.from_runDict(rundict)
+        job = launch.Job.from_rundict(rundict)
         # s = job.structure
 
         if file_system == "j":

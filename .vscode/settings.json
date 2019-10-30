@@ -4,7 +4,8 @@
     "python.formatting.autopep8Path": "/usr/local/bin/autopep8",
     "editor.formatOnSave": true,
     "python.linting.pylintArgs": [
-        "--enable=E265"
+        "--enable=E265",
+        "--disable=W0703"
     ],
     "python.linting.pylintUseMinimalCheckers": false
 }

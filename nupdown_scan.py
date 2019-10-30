@@ -43,11 +43,10 @@ def get_mag_tag_list(rundict_list):
 
 
 def get_mag_tag_single(rundict):
-    if not hasattr(rundict, "mag"):
+    if getattr(rundict, "mag", None) is None:
         rundict.mag = Oszicar(rundict.job_folder + "/OSZICAR"
-                              ).ionic_steps[-1]["mag"] /\
-            rundict.nb_cell
-    return(rundict)
+                              ).ionic_steps[-1]["mag"] / rundict.nb_cell
+    return rundict
 
 
 def plot_mag_graphs(rundict_list):
@@ -62,11 +61,11 @@ def plot_mag_graphs(rundict_list):
                 k.mag,
                 k.energy_per_fu))
         selected_runs = [sorted_runs[0]]
-        for r in sorted_runs:
-            if r.mag != selected_runs[-1].mag or r.x_na != selected_runs[-1].x_na:
-                selected_runs.append(r)
-        for r in selected_runs:
-            print(r.x_na, r.mag, r.stacking)
+        for run in sorted_runs:
+            if run.mag != selected_runs[-1].mag or run.x_na != selected_runs[-1].x_na:
+                selected_runs.append(run)
+        for run in selected_runs:
+            print(run.x_na, run.mag, run.stacking)
 
         # run_index = {}
 
@@ -91,7 +90,6 @@ def plot_nelect_heatmap(input_rundict_list):
     rundict_list = ([d for d in input_rundict_list if (
         d.status >= 3)])
     for rundict in rundict_list:
-        rundict.nelect = rundict.parameters["incar"]['NELECT']
         o_x = rundict.structure.indices_from_symbol("O")
         if len(o_x) == 0:
             # print("sulfide !")

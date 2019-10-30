@@ -140,54 +140,47 @@ class Rundict(ComputedStructureEntry):
         self.generate_tags()
 #     if c_e is not None:
 
+    @property
+    def nelect(self):
+        return self.parameters["incar"]['NELECT']
+
+    @property
+    def name_tag(self):
+        return "{} : {} : {}".format(
+            self.formula, self.stacking, self.str_id)
+
+    @property
+    def mag(self):
+        try:
+            mag_tot = Oszicar(os.path.join(
+                self.job_folder, "OSZICAR")).ionic_steps[-1]["mag"]
+            return mag_tot / len(self.structure.indices_from_symbol("Mn"))
+        except Exception:
+            print("could not define mag for", self.name_tag)
+            return None
+
     def generate_tags(self):
+        " progressively generates tags & attributes depending on the convergence "
         if self.status == 0:
             return("{} Not a job folder".format(self.job_folder))
-        else:
-            if self.status > 0:  # pre-run : just the structure
-                self.get_structure_tag()
-                self.get_nametag()
-            if self.status > 1:
-                # unconverged / corrupted run : just the energy
-                self.energy_per_fu = self.energy / self.nb_cell
-                try:
-                    self.get_magnetization()
-                except Exception:
-                    print("could not define mag for", self.name_tag)
-                self.structure_data = self.structure.copy()
-            if self.status >= 3:  # converged run : DOS & co.
-                print(self.name_tag, self.data["efermi"])
-                # self.complete_dos = self.data["complete_dos"]
-        # return(self.as_dict())
+        if self.status > 0:  # pre-run : just the structure
+            self.get_structure_tag()
+            self.get_nametag()
+        if self.status > 1:  # unconverged / corrupted run : just the energy
+            self.energy_per_fu = self.energy / self.nb_cell
+            self.structure_data = self.structure.copy()
+        if self.status >= 3:  # converged run : DOS & co.
+            print(self.name_tag, self.data["efermi"])
+            # self.complete_dos = self.data["complete_dos"]
+        return("tags generated")
 
     def get_nametag(self):
         " nameTag : get name of the current structure in a string nameTag"
-        structure = self.structure
-
-        D = structure.composition.get_el_amt_dict()
-
-        # sulfide or oxide ?
-        for spec in ['S', 'O']:
-            if D.get(spec, 0) > 0:
-                self.nb_cell = D[spec] / 2
-                break
+        self.nb_cell = get_nb_cell(self.structure)
 
         # Normalizing composition to get Nax My O2
-        for key in D.keys():
-            D[key] = round(D[key] / self.nb_cell, 2)
-
-        # Na or Li insertion ?
-        for spec in ['Na', 'Li']:
-            if D.get(spec, 0) > 0:
-                self.x_na = D[spec]
-                break
-        # print(d['x_na'])
-
-        self.volume = structure.lattice.volume / self.nb_cell
-        self.formula = Composition(D).formula
-
-        self.name_tag = "{} : {} : {}".format(
-            self.formula, self.stacking, self.str_id)
+        self.x_na, self.formula = get_xna_and_formula(
+            self.structure, self.nb_cell)
 
     def get_structure_tag(self):
         "Structure and composition related tags "
@@ -201,20 +194,16 @@ class Rundict(ComputedStructureEntry):
         (self.dOO_min, self.dOO_min_indices) = \
             cluster.get_min_OO_dist(self.structure)
 
+        self.volume = self.structure.lattice.volume / self.nb_cell
     # def coord(self, coord):
     #     return({"x_na": self.x_na, "doo_min": self.doo_min}[coord])
-
-    def get_magnetization(self):
-        self.mag = Oszicar(self.job_folder +
-                           "/OSZICAR").ionic_steps[-1]["mag"]\
-            / len(self.structure.indices_from_symbol("Mn"))
 
     # runDict['bandgap'] = runDict['vaspRun'].eigenvalue_band_properties[0]
 
     def get_MMOO_tags(self):
         """
         get oxygens pairs for quantification of A.R. distortion
-                /!\ Cannot define layers in Na rich compositions
+                ACHTUNG ! : Cannot define layers in Na rich compositions
         """
 
         try:
@@ -251,12 +240,11 @@ class Rundict(ComputedStructureEntry):
     #                entry_id=d.get("entry_id", None))
 
     @classmethod
-    def from_structure(cls, structure, entry_id):
-        c_e = None
-        status = 1
+    def from_structure(cls, structure, entry_id=None):
+        status = 1  # pre-run status
         job_folder = ""
         c_e = ComputedStructureEntry(structure=structure,
-                                     energy=1000000000000000000000.0,
+                                     energy=100000000,
                                      entry_id=entry_id)
         return(cls(c_e, status, job_folder))
 
@@ -626,7 +614,7 @@ def restrict_run_list(all_runs_input):
         while "finished" not in family_choice:
             try:
                 family_choice.append(
-                    family_array[eval(input(
+                    family_array[int(input(
                         "add stacking to current choice ({}) ? : ".format(
                             family_choice)))])
             except Exception as ex:
@@ -703,7 +691,7 @@ def restrict_run_list(all_runs_input):
         if input("individual run  selection ? [Y]/[n] ") == "Y":
             for run in restricted_range_runs:
                 if input(
-                        "keep : {} ? Y/y".format(run.name_tag'])) in ["Y", "y"]:
+                        "keep : {} ? Y/y".format(run.name_tag)) in ["Y", "y"]:
                     restricted_idv_runs.append(run)
         else:
             restricted_idv_runs = restricted_range_runs
@@ -741,9 +729,35 @@ def initialize(working_dir):
     print("\n preparing the run with the following parameters :\n{} \n\n".
           format(PARAM))
 
-    logFileName = get_file_name(PARAM['mainFolder'], "log")
-    logging.basicConfig(filename=logFileName, level=logging.DEBUG)
+    log_file_name = get_file_name(PARAM['mainFolder'], "log")
+    logging.basicConfig(filename=log_file_name, level=logging.DEBUG)
     logging.info('Started')
 
     parameters = PARAM
     return(parameters)
+
+
+def get_nb_cell(structure):
+    compo_dict = structure.composition.get_el_amt_dict()
+    nb_cell = 1
+    # sulfide or oxide ?
+    for spec in ['S', 'O']:
+        if compo_dict.get(spec, 0) > 0:
+            nb_cell = compo_dict[spec] / 2
+            break
+    return(nb_cell)
+
+
+def get_xna_and_formula(structure, nb_cell=1):
+    # Normalizing composition to get Nax My O2
+    compo_dict = structure.composition.get_el_amt_dict()
+    for key in compo_dict.keys():
+        compo_dict[key] = round(compo_dict[key] / nb_cell, 2)
+
+    # Na or Li insertion ?
+    for spec in ['Na', 'Li']:
+        if compo_dict.get(spec, 0) > 0:
+            x_na = compo_dict[spec]
+            break
+    formula = Composition(compo_dict).formula
+    return(x_na, formula)
