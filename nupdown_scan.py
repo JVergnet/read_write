@@ -84,9 +84,6 @@ def plot_mag_graphs(rundict_list):
 
 def plot_nelect_heatmap(input_rundict_list):
 
-    nb_plots = 1
-    axes = []
-
     rundict_list = ([d for d in input_rundict_list if (
         d.status >= 3)])
     for rundict in rundict_list:
@@ -97,25 +94,27 @@ def plot_nelect_heatmap(input_rundict_list):
 
         rundict.doo = rundict.structure.distance_matrix[o_x[0], o_x[1]]
 
-    # define a vertical slice : all structure with same NELECT (x axis)
-    for nelect in {d.nelect for d in rundict_list}:
-        struct_list_slice = [d for d in rundict_list if d.nelect == nelect]
-        e_min = min([d.energy_per_fu for d in struct_list_slice])
-        print(" nelect={} :  {} runs, E min = {:.2f} ".
-              format(nelect, len(struct_list_slice), e_min))
+    nb_plots = 1
+    axes = []
+    file_name = 'OO_landscape_energy'
+    fig = plt.figure(file_name, figsize=(11, 9))
+    axes.append(fig.add_subplot(1, nb_plots, 1))
+    axe = axes[-1]
+    plot_energy_landscape(rundict_list,
+                          fig, axe,
+                          attr_x="nelect", attr_y="doo")
+    fig.tight_layout()
+    plt.show(block=False)
 
-        for d in struct_list_slice:
-            d.e_valley = (d.energy_per_fu - e_min)  # in meV
 
-    x_y_e = np.array([[d.nelect, d.doo, d.e_valley] for d in rundict_list])
+def plot_energy_landscape(rundict_list, fig, axe, attr_x="nelect", attr_y="doo"):
+    " plot energy heatmap using abstract attributes for x and y"
+    x_y_e = build_x_y_e(rundict_list, attr_x, attr_y)
     # XYE =  np.flipud( XYE)
 
     # interpolation of the grid of computed points
-    # x = make_linspace(x_y_e[:, 0])
-    # y = np.linspace(min(x_y_e[:, 1]), max(x_y_e[:, 1]), num=100)
-
-    grid_x, grid_y = np.meshgrid(make_linspace(
-        x_y_e[:, 0]), make_linspace(x_y_e[:, 1]))
+    grid_x, grid_y = np.meshgrid(make_linspace(x_y_e[:, 0]),
+                                 make_linspace(x_y_e[:, 1]))
     # print( XYE[:,2])
     interp_e = griddata(x_y_e[:, 0:2], x_y_e[:, 2],
                         (grid_x, grid_y), method='linear')
@@ -124,30 +123,29 @@ def plot_nelect_heatmap(input_rundict_list):
     interp_e = interp_e - min_e
     # surface_color = interp_e
     # colorbar_title = "Energy"
-    file_name = 'OO_landscape_energy'
 
     # print(interp_E)
     print("min E {:.4f} , max E {:.4f}".format(min_e, max_e))
-    fig = plt.figure(file_name, figsize=(11, 9))
-    axes.append(fig.add_subplot(1, nb_plots, 1))
+
     bounds = np.linspace(0, 3, num=16, endpoint=True)
     norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
-    e_img = axes[-1].contourf(grid_x,
-                              grid_y,
-                              interp_e,
-                              bounds,
-                              cmap='coolwarm',
-                              norm=norm,
-                              extend='max')
+    e_img = axe.contourf(grid_x,
+                         grid_y,
+                         interp_e,
+                         bounds,
+                         cmap='coolwarm',
+                         norm=norm,
+                         extend='max')
     # axe_img.cmap.set_under('white')
-    e_img.cmap.set_over('xkcd:brick red')
-    axes[-1].scatter(x_y_e[:, 0], x_y_e[:, 1], c="black", marker="+",
-                     s=30, label="computed structures",
-                     alpha=0.3)
+    e_img.cmap.set_over('xkcd:brick red')  # color for E above max defined
+
+    axe.scatter(x_y_e[:, 0], x_y_e[:, 1], c="black", marker="+",
+                s=30, label="computed structures",
+                alpha=0.3)
     # CS3.cmap.set_under('yellow')
     # CS3.cmap.set_over('cyan')
     #
-    cbar = fig.colorbar(e_img, ax=axes[-1])
+    cbar = fig.colorbar(e_img, ax=axe)
     #  ,  norm=colors.PowerNorm(gamma=1./3.) ) //,
     # axes[-1].imshow(interp_E, extent=(np.amin(x), np.amax(x), np.amin(y), np.amax(y)),
     #                             cmap=cm.jet) #, norm=LogNorm())
@@ -156,11 +154,30 @@ def plot_nelect_heatmap(input_rundict_list):
     # plt.clabel(E_img, [25], inline=True, fmt=["25 meV"], fontsize=10)
     # Add the contour line levels to the colorbar
     # cbar.add_lines(contours)
-    axes[-1].set_xlabel('$N_{electrons}$')
-    axes[-1].set_ylabel('$d_{OO}$')
-    axes[-1].title.set_text('Energy landscape')
-    fig.tight_layout()
-    plt.show(block=False)
+    axe.set_xlabel('$N_{electrons}$')
+    axe.set_ylabel('$d_{OO}$')
+    axe.title.set_text('Energy landscape')
+
+
+def build_x_y_e(rundict_list, attr_x, attr_y):
+    """
+    build a X / Y / E array to be plotted 
+    define a vertical slice (constant X) : all structure with same NELECT (x axis)
+    scale to zero energy the bottom of each slice
+    """
+    for attr_x_value in {getattr(d, attr_x) for d in rundict_list}:
+        struct_list_slice = [
+            d for d in rundict_list if getattr(d, attr_x) == attr_x_value]
+        e_min = min([d.energy_per_fu for d in struct_list_slice])
+        print(" {}={} :  {} runs, E min = {:.2f} ".
+              format(attr_x, attr_x_value, len(struct_list_slice), e_min))
+
+        for rundict in struct_list_slice:
+            rundict.e_valley = (rundict.energy_per_fu - e_min)  # in meV
+
+    x_y_e = np.array(
+        [[getattr(d, attr_x), getattr(d, attr_y), d.e_valley] for d in rundict_list])
+    return x_y_e
 
 
 def make_linspace(x_1d_vect):
@@ -244,9 +261,9 @@ def plot_mag_heatmap(input_rundict_list):
     }
     print(short_2_long)
 
-    for(i, (specie, value, value_type, cmap)) in enumerate(landscapes_to_draw):
+    for(j, (specie, value, value_type, cmap)) in enumerate(landscapes_to_draw):
         try:
-            ax_nb = i + 2
+            ax_nb = j + 2
 
             # specie = "O"
             # value = "charge"

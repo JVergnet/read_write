@@ -1,16 +1,17 @@
 # createStructureList.py
-from copy import deepcopy
+# from copy import deepcopy
 
 import numpy as np
 import pymatgen.analysis.magnetism.analyzer as mag_anal
-from pymatgen.io.vasp.sets import MITRelaxSet, MPStaticSet
+from pymatgen.io.vasp.sets import MITRelaxSet  # , MPStaticSet
 from pymatgen.transformations import site_transformations as st
 from pymatgen.transformations import standard_transformations as sd
 from pymatgen.transformations.advanced_transformations import \
     EnumerateStructureTransformation
 
 import structure_geometry_utils as cluster
-import launchDisordered as launch
+
+# import launchDisordered as launch
 
 # METAL DISORDER
 # ----------------------------------------

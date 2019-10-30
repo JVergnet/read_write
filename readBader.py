@@ -1,25 +1,77 @@
 # readBader.py
 
-# read bader charge and volume of the structure
-import numpy as np
 import os
 import subprocess
 from multiprocessing import Pool, cpu_count
+
 import matplotlib.pyplot as plt
+# read bader charge and volume of the structure
+import numpy as np
+from pymatgen.analysis.ewald import EwaldSummation
 from pymatgen.io.vasp.inputs import Poscar, Potcar
 
-import readRun_entries as read
 import generic_plot as g_plot
+import readRun_entries as read
 
-from pymatgen.analysis.ewald import EwaldSummation
+
+def get_bader_tags(rundict_list):
+    "fetch the bader values of each run in parallel"
+    vasp_run_poll = []
+    try:
+        with Pool(processes=cpu_count()) as p:
+            vasp_run_poll = p.map(get_bader_tag_single, rundict_list)
+            p.close()
+            p.join()
+
+    except Exception as ex:
+        print("EXCEPTION", ex)
+    print("bader tag after polling")
+    print(rundict_list[0].structure_data[0].properties)
+    print(vasp_run_poll.count(False))
+    return(vasp_run_poll)
 
 
-def do_bader_in_folder(folder):
+def get_bader_tag_single(runDict):
+    """
+    Check existence of bader files / performs the calculation if no file is found
+    read the data
+    feed it to the "structure data" attribute of the corresponding rundict instance
+    """
 
-    # Run bader analysis on the vasprun directories
-    # (unless the /BADER folder aleardy exists)
-    # Require the alias "do_bader" to be set in the ~/.bashrc of the user
+    if runDict.bader_done:
+        print("bader already done for {}".format(runDict.name_tag))
+        return runDict
 
+    valid_bader_files = generate_bader_files(runDict.job_folder)
+
+    if not valid_bader_files:
+        print("Bader computation aborted for {}".format(runDict.name_tag))
+        return runDict
+
+    bader_raw_data = read_bader_files(runDict.job_folder)
+    # Structure of the array :
+    # bader_array[i] = (bader_charges,charge_vol,bader_magmom,magmom_vol)
+
+    struct = runDict.structure_data
+    for j, prop in enumerate(
+            ['charge', 'vol_chg', 'magnetization', 'vol_mag']):
+        struct.add_site_property(prop, [bader_raw_data[i][j]
+                                        for i in range(struct.num_sites)])
+
+    # print(runDict.structure_data[0].properties)
+    runDict.bader_done = True
+
+    return runDict
+
+
+def generate_bader_files(folder):
+    """
+    Run bader analysis on the vasprun directories
+    only keep .dat files
+    if the /BADER folder aleardy exists, we skip the computation
+    Require the alias "do_bader" to be set in the ~/.bashrc of the user
+    return True if the .dat files are created or found
+    """
     sucessful_bader = False
     try:
         print("in do_bader for folder : \n {}".format(folder))
@@ -84,73 +136,48 @@ def do_bader_in_folder(folder):
     return(sucessful_bader)
 
 
-def get_bader_charges_and_magmoms(folder):
-    # read the bader (charge + magmom) calculation done in a folder
-    # (Performs the bader calculation if the file is not present
+def read_bader_files(folder):
+    """
+    Read the bader (charge + magmom) calculation done in a folder
+    (Performs the bader calculation if the file is not present
+    """
 
     # bader_charges = []
     # charge_vol = []
     # bader_magmom = []
     # magmom_vol = []
 
-    try:
-        check = do_bader_in_folder(folder)
-    except Exception as ex:
-        print("Unable to do bader for {} : {}".format(folder, ex))
-        return([None])
-
-    if check:
-        print("Completed do_bader in folder : ", check)
-        os.chdir(folder)
-        if os.path.exists("{}/BADER/CHARGE/ACF.dat".format(folder)):
-            print('bader charge : OK ')
-            bad_chg = np.loadtxt("{}/BADER/CHARGE/ACF.dat".format(folder),
-                                 comments=['#', '---', 'VACUUM', 'NUMBER'],
-                                 usecols=[4, 6], )
-            # with open('BADER/CHARGE/ACF.dat') as f_charge:
-            #     lines = [line.rstrip() for line in f_charge]
-            #     for l in lines[2: -4]:
-            #         # print(l)
-            #         bader_charges.append(float(l.split()[4]))
-            #         charge_vol.append(float(l.split()[6]))
-        if os.path.exists("{}/BADER/SPIN/ACF.dat".format(folder)):
-            print('bader spin : OK ')
-            bad_mag = np.loadtxt('{}/BADER/SPIN/ACF.dat'.format(folder),
-                                 comments=['#', '---', 'VACUUM', 'NUMBER'],
-                                 usecols=[4, 6], )
-            # with open('BADER/SPIN/ACF.dat') as f_spin:
-            #     lines = [line.rstrip() for line in f_spin]
-            #     for l in lines[2: -4]:
-            #         # print(l)
-            #         bader_magmom.append(float(l.split()[4]))
-            #         magmom_vol.append(float(l.split()[6]))
-        # bader_array = [
-        #     n for n in zip(
-        #         bader_charges,
-        #         charge_vol,
-        #         bader_magmom,
-        #         magmom_vol)]
-        bader_array = np.hstack((bad_chg, bad_mag))
-        return(bader_array)
-    else:
-        return(None)
-
-
-def get_bader_tags(runList):
-
-    vasp_run_poll = []
-    try:
-        with Pool(processes=cpu_count()) as p:
-            vasp_run_poll = p.map(get_bader_tag_single, runList)
-            p.close()
-            p.join()
-
-    except Exception as ex:
-        print("EXCEPTION", ex)
-    print("bader tag after polling")
-    print(runList[0].structure_data[0].properties)
-    print(vasp_run_poll.count(False))
-    return(vasp_run_poll)
+    os.chdir(folder)
+    if os.path.exists("{}/BADER/CHARGE/ACF.dat".format(folder)):
+        print('bader charge : OK ')
+        bad_chg = np.loadtxt("{}/BADER/CHARGE/ACF.dat".format(folder),
+                             comments=['#', '---', 'VACUUM', 'NUMBER'],
+                             usecols=[4, 6], )
+        # with open('BADER/CHARGE/ACF.dat') as f_charge:
+        #     lines = [line.rstrip() for line in f_charge]
+        #     for l in lines[2: -4]:
+        #         # print(l)
+        #         bader_charges.append(float(l.split()[4]))
+        #         charge_vol.append(float(l.split()[6]))
+    if os.path.exists("{}/BADER/SPIN/ACF.dat".format(folder)):
+        print('bader spin : OK ')
+        bad_mag = np.loadtxt('{}/BADER/SPIN/ACF.dat'.format(folder),
+                             comments=['#', '---', 'VACUUM', 'NUMBER'],
+                             usecols=[4, 6], )
+        # with open('BADER/SPIN/ACF.dat') as f_spin:
+        #     lines = [line.rstrip() for line in f_spin]
+        #     for l in lines[2: -4]:
+        #         # print(l)
+        #         bader_magmom.append(float(l.split()[4]))
+        #         magmom_vol.append(float(l.split()[6]))
+    # bader_array = [
+    #     n for n in zip(
+    #         bader_charges,
+    #         charge_vol,
+    #         bader_magmom,
+    #         magmom_vol)]
+    bader_array = np.hstack((bad_chg, bad_mag))
+    return(bader_array)
 
 
 def get_charge(self, atom_index):
@@ -201,7 +228,7 @@ def get_oxidation_state_decorated_structure(structure, potcar, poscar):
         to be supplied.
     """
     # structure = structure.copy()
-    charges = [-get_charge_transfer(i, structure,  potcar, poscar)
+    charges = [-get_charge_transfer(i, structure, potcar, poscar)
                for i in range(len(structure))]
     structure.add_oxidation_state_by_site(charges)
     structure.add_site_property("bader_oxi", charges)
@@ -212,7 +239,7 @@ def get_madelung_tag_single(runDict, force=False, verbose=0, oxi_int=False):
     struct_data = runDict.structure_data
     if not force and struct_data[0].properties.get("E_mad", None) is not None:
         print("skipping")
-        return(True)
+        return True
     poscar, potcar = [p.from_file(runDict.job_folder+f) for (p, f) in
                       [(Poscar, "/POSCAR"), (Potcar, "/POTCAR")]]
     s_dict = {}
@@ -249,7 +276,7 @@ def get_madelung_tag_single(runDict, force=False, verbose=0, oxi_int=False):
 
     if struct_data[0].properties.get("charge", None) is None:
         print("No bader charges => no bader madelung")
-        return(False)
+        return False
         # Test if bader charges were computed correctly
 
     get_oxidation_state_decorated_structure(struct_data,
@@ -263,31 +290,8 @@ def get_madelung_tag_single(runDict, force=False, verbose=0, oxi_int=False):
                                   [ew_sum.get_site_energy(i)
                                    for i in range(struct_data.num_sites)])
     s_dict["oxi_bader"] = struct_data
-    [print(s) for s in s_dict.values()]
+    print(" ".join(s_dict.values()))
     return(True)
-
-
-def get_bader_tag_single(runDict):
-    # read the charges+magmom (performs the calculation if no file is found)
-    # then modify the list of dict "equiv site list" given as argument
-    # to fill the fields charge and magnetization
-
-    if hasattr(runDict, "mag"):
-        bader_array = get_bader_charges_and_magmoms(runDict.job_folder)
-        # bader_array[i] = (bader_charges,charge_vol,bader_magmom,magmom_vol)
-        if bader_array is not None:
-            for j, prop in enumerate(
-                    ['charge', 'vol_chg', 'magnetization', 'vol_mag']):
-                runDict.structure_data.\
-                    add_site_property(prop,
-                                      [bader_array[i][j]
-                                       for i in range(
-                                          runDict.structure_data.num_sites)])
-            print(runDict.structure_data[0].properties)
-        else:
-            print("Bader computation aborted for {}".format(runDict.nameTag))
-
-    return(runDict)
 
 
 # CHARGE
@@ -310,7 +314,7 @@ plotting charge and magmom
 2=site chg and mag,
 3 = chg & mag volumes ( < 0 to pass)\n
             """)
-            detailled = eval(input("Level of verbosity ?   : "))
+            detailled = int(input("Level of verbosity ?   : "))
         except BaseException:
             print("default to 0")
 
