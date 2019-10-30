@@ -1,24 +1,26 @@
 # Read_Run_pages.py
 
-# Imports
-import generic_plot
 import itertools
 import os
-import readBader as bader
-import DOS_plot as DOS
-import read_hull as hull
-import readRun_entries as readRun
-from functools import partial
-from tkinter import messagebox
-from tkinter import filedialog
-from tkinter import ttk
 import tkinter as tk
+from functools import partial
+from tkinter import filedialog, messagebox, ttk
+
+import matplotlib
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib.figure import Figure
 from matplotlib.backend_bases import key_press_handler
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-import matplotlib
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
+                                               NavigationToolbar2Tk)
+from matplotlib.figure import Figure
+
+import DOS_plot as DOS
+# Imports
+import generic_plot
+import read_hull as hull
+import readBader as bader
+import readRun_entries as readRun
+
 matplotlib.use("TkAgg")
 
 

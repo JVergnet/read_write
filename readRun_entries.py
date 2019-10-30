@@ -598,47 +598,19 @@ def get_file_name(folder, name, ext=""):
     # incremental suffix to the name in argument
     k = 0
     basis = os.path.join(folder, name) + "_"
-    FileName = basis + str(k)
-    while os.path.exists(FileName + ext):
+    file_name = basis + str(k)
+    while os.path.exists(file_name + ext):
         k += 1
-        FileName = basis + str(k)
-        print(FileName)
-    return(FileName)
-
-
-# def plot_site_value_evolution(dosList, specie, value='charge',
-#                               plot_type=None, axe0=None):
-#     return (
-#         generic_plot.plot_site_value_evolution(
-#             dosList,
-#             specie,
-#             value='charge',
-#             plot_type=None,
-#             axe0=None))
-
-
-# def plot_structure_value_evolution(
-#         sorted_entries,
-#         prop_list=[
-#             'dOO_min',
-#             'bandgap'],
-#         legend=None):
-#     return (
-#         generic_plot.plot_structure_value_evolution(
-#             sorted_entries,
-#             prop_list=[
-#                 'dOO_min',
-#                 'bandgap'],
-#             legend=None))
-
-
-# def save_fig(fig, plotTitle, save_mode=None, folder=None):
-#     generic_plot.save_fig(fig, plotTitle, save_mode=save_mode, folder=folder)
+        file_name = basis + str(k)
+        print(file_name)
+    return(file_name)
 
 
 def restrict_run_list(all_runs_input):
-    # defines a restriction on the runs to analyze and plot
-    # if the given list is not locked, performs filtering on the list
+    """
+    defines a restriction on the runs to analyze and plot
+    if the given list is not locked, performs filtering on the list
+    """
     selection_loop = True
 
     while selection_loop:
@@ -682,18 +654,21 @@ def restrict_run_list(all_runs_input):
             # 3 converged plots, 4 : all minimas (even off_hull) 5 : On hull
             # minima
             list_choice = None
+            choice_dict = {
+                "[a]ll": "all runs that have at least a POSCAR ",
+                "[c]onverged": " all converged vasprun sorted by x_na then energy",
+                "[m]inima": " structures of lowest energy for each x_na ",
+                "[h]ull": " structures on the convex hull"
+            }
             while list_choice is None:
-                list_choice = input(
-                    "filter structure list : \n [a]ll / [c]onverged / [m]inima / [h]ull ? ")
+                print("Avaliable filtering : "+" // ".join(choice_dict.keys))
+                list_choice = input("filter structure list ? :")
                 choice_dict = {"a": 1, "c": 3, "m": 4, "h": 5}
                 if list_choice in choice_dict.keys():
                     sieve_lvl = choice_dict[list_choice]
                 else:
-                    print(
-                        "[a]ll : all runs that have at least a POSCAR \n",
-                        "[c]onverged : all converged vasprun sorted by x_na then energy\n",
-                        "[m]inima : structures of lowest energy for each x_na \n",
-                        "[h]ull : structures on the convex hull")
+                    print("\n".join(["{} : {}".format(*kv)
+                                     for kv in choice_dict.items()]))
                     list_choice = None
             restricted_hull_runs = [
                 d for d in restricted_stack_runs if d.status >= sieve_lvl]
@@ -706,15 +681,15 @@ def restrict_run_list(all_runs_input):
 
         restricted_range_runs = restricted_hull_runs
         try:
-            [Xmin, Xmax] = [0, 1]
+            [x_min, x_max] = [0, 1]
             if len(set([d.x_na for d in restricted_stack_runs])) > 1 and \
                input("Change default x_na range [{},{}] ? [Y]".
-                     format(Xmin, Xmax))[0] in ["Y", "y"]:
+                     format(x_min, x_max))[0] in ["Y", "y"]:
 
-                Xmin = eval(input("Xmin : "))
-                Xmax = eval(input("Xmax : "))
+                x_min = float(input("Xmin : "))
+                x_max = float(input("Xmax : "))
                 restricted_range_runs = [r for r in restricted_hull_runs
-                                         if (r.x_na >= Xmin and r.x_na <= Xmax)]
+                                         if (r.x_na >= x_min and r.x_na <= x_max)]
         except Exception as ex:
             print("{} : no range filtering".format(ex))
 
@@ -728,7 +703,7 @@ def restrict_run_list(all_runs_input):
         if input("individual run  selection ? [Y]/[n] ") == "Y":
             for run in restricted_range_runs:
                 if input(
-                        "keep : {} ? Y/y".format(run['nameTag'])) in ["Y", "y"]:
+                        "keep : {} ? Y/y".format(run.name_tag'])) in ["Y", "y"]:
                     restricted_idv_runs.append(run)
         else:
             restricted_idv_runs = restricted_range_runs
