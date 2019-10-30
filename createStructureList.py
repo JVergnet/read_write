@@ -9,7 +9,7 @@ from pymatgen.transformations import standard_transformations as sd
 from pymatgen.transformations.advanced_transformations import \
     EnumerateStructureTransformation
 
-import cluster
+import structure_geometry_utils as cluster
 import launchDisordered as launch
 
 # METAL DISORDER
@@ -17,7 +17,7 @@ import launchDisordered as launch
 
 
 def disorder_in_supercell(pristineStruct,
-                          substSpecies={},
+                          # substSpecies={},
                           supercell_size=[1, 1, 1],
                           number_of_struct=10):
 
@@ -153,8 +153,8 @@ def sodium_disorder(
         [list(indices)], [[fracRemoved]], algo=3)
     # print(" frac removed ({0}) x indices ({1}) = nb removed ({2})".format(fracRemoved, len(indices), nb_removed))
     enumList = enum._fast_ordering(oxi,
-                                  num_remove_dict={indices: nb_removed},
-                                  num_to_return=number_of_struct)
+                                   num_remove_dict={indices: nb_removed},
+                                   num_to_return=number_of_struct)
 
     chosenList = [pristine_job.copy_w_new_struct(
         chosenStruct['structure'], new_id="_{}".format(i))
@@ -302,8 +302,6 @@ def trigonal_distortion(pristine, disto_max, nb_steps):
             {"structure": s_copy, "id": "_Dtrigo_{:.4f}".format(n)})
         print("Dtrigo_{}".format(n))
     return(distorted_pristine_list)
-
-
 
 
 def rotation_in_supercell(initialStruct,

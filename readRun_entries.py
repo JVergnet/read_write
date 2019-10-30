@@ -27,7 +27,7 @@ from pymatgen.io.vasp.inputs import Incar
 from pymatgen.io.vasp.outputs import Oszicar  # Outcar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
-import cluster
+import structure_geometry_utils as cluster
 import platform_id
 # import lobster_coop as lob
 # import generic_plot as generic_plot

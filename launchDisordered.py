@@ -259,7 +259,7 @@ def get_complete_structure_list(
             struct_list_tmp = create_list.disorder_in_supercell(
                 pristine_job,
                 # {"Li+":0.67 ,"Ti2+" : 0.33},
-                substSpecies=None,
+                # substSpecies=None,
                 supercell_size=[1, 1, 1],  # [2,2,2],
                 number_of_struct=4)
 
@@ -338,7 +338,7 @@ def generate_job_folders(final_job_list,
     os.mkdir(project_dir)
 
     folder_list = []
-    if selective_dynamic is not None:
+    if selective_dynamic not in [None, "False"]:
         make_selective_dynamic(final_job_list, selective_dynamic)
 
         # if fukui is not None :
@@ -361,14 +361,14 @@ def make_selective_dynamic(final_job_list, selective_dynamic):
     for job in final_job_list:
         print(job.job_name)
         mysd = np.ones([job.structure.num_sites, 3], bool)
-        # if selective_dynamic == "all_sites":
-        #     allowed_sites = [n for n in range(currentStructure.num_sites)]
-        # else:
-        #     allowed_sites = []
-        #     if selective_dynamic != "no_sites":
-        #         for spec in selective_dynamic:
-        #             allowed_sites += currentStructure.indices_from_symbol(
-        #                 spec)
+        if selective_dynamic == "all_sites":
+            allowed_sites = [n for n in range(job.structure.num_sites)]
+        else:
+            allowed_sites = []
+            if selective_dynamic != "no_sites":
+                for spec in selective_dynamic:
+                    allowed_sites += job.structure.indices_from_symbol(
+                        spec)
         indices_to_block = []
 
         while True:
@@ -469,7 +469,7 @@ def main():
 def substitution_desodiation_P2_P3():
     # Set the parameters ofthe run
     # parent_dir = "/home/jvergnet/frofro/honeycomb/"
-    projectName = "substitued"
+    project_name = "substitued"
     # oxyde = True
 
     cif_folder = "/home/jvergnet/frofro/honeycomb/ref_POSCAR_MgMn"
@@ -496,18 +496,18 @@ def substitution_desodiation_P2_P3():
     else:
         parent_folder = "/mnt/fbf83589-c1e0-460b-86cc-ec3cc4a64545/backup_cluster/backup_fro/honeycomb/"
 
-    projectName = "Hull_all"
+    project_name = "Hull_all"
 
     # get the O2 /P2 / O3 with Mg
     Mg_pristine_stackings = get_pristine_list(
         cif_list_O2, cif_folder, is_poscar=True)
     # [ {'structure' : O2 , "id" : "O2 } ]
 
-    projectDir = parent_folder + projectName
+    projectDir = parent_folder + project_name
     i = 0
     while (os.path.exists(projectDir)):
         i += 1
-        projectDir = parent_folder + projectName + str(i)
+        projectDir = parent_folder + project_name + str(i)
 
     os.mkdir(projectDir)
     os.chdir(projectDir)

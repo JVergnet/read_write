@@ -1,7 +1,7 @@
 import importlib
 import itertools
 # import launchDisordered as launch
-# import cluster as cluster
+# import structure_geometry_utils as cluster
 # import math
 from multiprocessing import Pool, cpu_count
 # import subprocess

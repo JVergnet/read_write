@@ -25,7 +25,7 @@ from pymatgen.io.vasp import Vasprun
 from pymatgen.io.vasp.inputs import Incar
 from scipy.integrate import simps
 
-import cluster as cluster
+import structure_geometry_utils as cluster
 import DOS_plot as DOS
 import generic_plot
 import platform_id

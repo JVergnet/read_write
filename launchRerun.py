@@ -173,20 +173,7 @@ def main():
     elif rerun_select in ["c"]:
         rerun_list = converged_jobs
 
-    if input("apply further selection on runs ? : Y / n ") == "Y":
-        if rerun_select in ["c"] and input(
-                "convex hull filtering ? : Y / n ") == "Y":
-            rerun_list = read.restrict_run_list(rerun_list)
-            print("selected runs : \n {}".format(
-                [print(rundict.id) for rundict in rerun_list]))
-
-        if input("folder by folder ? : Y / n ") == "Y":
-            rerun_list_tmp = rerun_list
-            rerun_list = []
-            for run in rerun_list_tmp:
-                if input("include {} : Y / n ".format(run.id)) == "Y":
-                    rerun_list.append(run)
-        print("nb of structures : {0} ".format(len(rerun_list)))
+    rerun_list = filtering_runs(rerun_select, rerun_list)
 
     print("number of valid jobs to rerun : {}".format(len(rerun_list)))
 
@@ -470,7 +457,25 @@ def main():
             unconv_dir = rundict.oldFolder
             # if input("remove {0} ? Y / N ".format(unconv_dir))=="Y" :
             shutil.rmtree(unconv_dir)
-            print("{0} deleted ".format(unconv_dir))
+            print("{} deleted ".format(unconv_dir))
+
+
+def filtering_runs(rerun_select, rerun_list):
+    if input("apply further selection on runs ? : Y / n ") == "Y":
+        if rerun_select in ["c"] and input(
+                "convex hull filtering ? : Y / n ") == "Y":
+            rerun_list = read.restrict_run_list(rerun_list)
+            print("selected runs : \n {}".format(
+                [print(rundict.id) for rundict in rerun_list]))
+
+        if input("folder by folder ? : Y / n ") == "Y":
+            rerun_list_tmp = rerun_list
+            rerun_list = []
+            for run in rerun_list_tmp:
+                if input("include {} : Y / n ".format(run.id)) == "Y":
+                    rerun_list.append(run)
+        print("nb of structures : {0} ".format(len(rerun_list)))
+    return rerun_list
 
 
 if __name__ == '__main__':

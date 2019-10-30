@@ -26,15 +26,15 @@ print(sys.version)
 SETTING_DIR = platform_id.setting_dir()
 
 
-def generate_plot(run_list_all, input_graph_type=None, allow_filtering=True):
+def filter_loop(run_list_all, input_graph_type=None, allow_filtering=True):
     """
-    allow to plot several quantities if graph_type option is set to None
-    plot "none" to exit the loop
+    outer loop to select (and change) the dataset
+    before entering the plot loop (with a fixed dataset)
     """
 
-    filter_loop = True
+    continue_filter_loop = True
 
-    while filter_loop:
+    while continue_filter_loop:
 
         restricted_runs = read.restrict_run_list(run_list_all) \
             if allow_filtering else run_list_all
@@ -43,65 +43,55 @@ def generate_plot(run_list_all, input_graph_type=None, allow_filtering=True):
         if len(restricted_runs) == 0:
             print("no enough runs ! ")
         else:
-            print("============= PRE-TREATMENT OF DATA ====================")
-            bader_done = False
-            if input("generate bader tags ? : Y/n  : ") == "Y":
-                bader_done = bader.get_bader_tags(restricted_runs)
-
-            chem_env_done = False  # to avoid deprecated bailar twist functions switches
-            # if not chem_env_done and input(
-            #         "generate chem env tags ? : Y/n  : ") == "Y":
-            #     restricted_runs = bailar.get_chem_env_tags(restricted_runs)
-            #     chem_env_done = True
-
-            print("============= PLOTTING ====================")
-            general_plot_loop(
-                restricted_runs,
-                input_graph_type,
-                chem_env_done,
-                bader_done)
+            plot_loop(restricted_runs, input_graph_type)
 
         if allow_filtering is False or input(
                 "Continue plotting with different filter ? [Y/n]") != "Y":
-            filter_loop = False
+            continue_filter_loop = False
 
     return True
 
 
-def general_plot_loop(restricted_runs, input_graph_type=None,
-                      chem_env_done=False, bader_done=False):
-    " switch between quit // analysis "
+def plot_loop(restricted_runs, input_graph_type=None):
+    " loop to draw several plot on a fixed dataset "
 
-    plot_loop = True
-    while plot_loop:
+    looping_mode = True
+    if input_graph_type is not None:
+        # exit after 1 loop if the function is called with an input_graph_type
+        looping_mode = False
+        graph_type = input_graph_type
 
-        if input_graph_type is None:
-            # if no input_graph_type is defined, ask user for graph_type
+    print("============= PRE-TREATMENT OF DATA ====================")
+    bader_done = False
+    if input("generate bader tags ? : Y/n  : ") == "Y":
+        bader_done = bader.get_bader_tags(restricted_runs)
+
+    chem_env_done = False  # to avoid deprecated bailar twist functions switches
+    # if not chem_env_done and input(
+    #         "generate chem env tags ? : Y/n  : ") == "Y":
+    #     restricted_runs = bailar.get_chem_env_tags(restricted_runs)
+    #     chem_env_done = True
+
+    print("============= PLOTTING ====================")
+    while True:
+        if looping_mode:
             graph_type = ask_graph_type()
-        else:
-            # exit after 1 loop if the function is called with an input_graph_type
-            graph_type = input_graph_type
-            plot_loop = False
 
-        if graph_type is "QUIT":
-            print("finished plotting \n")
-            input("press any key to close all figures")
-            plt.close("all")
+        continue_loop = single_analysis_routine(graph_type, restricted_runs,
+                                                chem_env_done, bader_done,)
+
+        # looping ONLY if initial input is undefined AND user want another graph
+        if not (looping_mode and continue_loop):
             break
 
-        chose_analysis_plot(
-            graph_type,
-            restricted_runs,
-            chem_env_done,
-            bader_done,)
 
-
-def chose_analysis_plot(graph_type, restricted_runs, chem_env_done, bader_done):
+def single_analysis_routine(graph_type, restricted_runs, chem_env_done, bader_done):
     """
-    switch between all analysis routines
-    catch exceptions and reload analysis modules if necessary
+    chose & perform a single analysis routine
+    catch exceptions and reload modules if necessary
     """
     reload_all = False
+    continue_loop = True
     try:
         if graph_type == 'Structure':
             bailar.plot_structure_graphs(
@@ -145,6 +135,12 @@ def chose_analysis_plot(graph_type, restricted_runs, chem_env_done, bader_done):
             print("normal reload")
             reload_all = True
 
+        elif graph_type is "QUIT":
+            print("finished plotting \n")
+            input("press any key to close all figures")
+            plt.close("all")
+            continue_loop = False
+
     except Exception as ex:
         print(traceback.format_exc())
         print(ex)
@@ -170,7 +166,7 @@ def chose_analysis_plot(graph_type, restricted_runs, chem_env_done, bader_done):
     else:
         plt.show(block=False)
 
-    return reload_all
+    return continue_loop
 
 
 GRAPH_OPTION = [
@@ -206,7 +202,8 @@ def ask_graph_type(graph_type=None):
     return graph_type
 
 
-if __name__ == '__main__':
+def main():
+    "main function"
 
     if len(sys.argv) > 1:
         working_dir = sys.argv[1]
@@ -215,11 +212,15 @@ if __name__ == '__main__':
 
     read.initialize(working_dir)
 
-    RUNDICT_LIST = read.collect_valid_runs(working_dir)
+    rundict_list = read.collect_valid_runs(working_dir)
 
-    print("number of valid runs " + str(len(RUNDICT_LIST)))
-    if len(RUNDICT_LIST) == 0:
+    print("number of valid runs " + str(len(rundict_list)))
+    if len(rundict_list) == 0:
         print("no run to show, yow ! ")
         exit(1)
 
-    generate_plot(RUNDICT_LIST)
+    filter_loop(rundict_list)
+
+
+if __name__ == '__main__':
+    main()
