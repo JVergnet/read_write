@@ -133,7 +133,7 @@ class Job(MPRelaxSet):
 
     @classmethod
     def from_rundict(cls, rundict,  new_folder=None):
-        job = Job(rundict.structure, rundict.id,
+        job = Job(rundict.structure, rundict.str_id,
                   user_param=dict(rundict.parameters.get('custom', {})),
                   user_incar=dict(rundict.parameters['incar']),
                   job_folder=rundict.job_folder)
@@ -433,7 +433,7 @@ def main():
     elif input("Browse existing runs in subfolder ? Y/N") == "Y":
         rundicts = read.collect_valid_runs(
             cif_folder, vaspRun_parsing_lvl=0)
-        pristine_job_list = [Job(r.structure, r.id,
+        pristine_job_list = [Job(r.structure, r.str_id,
                                  user_incar=dict(r.parameters["incar"]))
                              for r in rundicts]
     else:

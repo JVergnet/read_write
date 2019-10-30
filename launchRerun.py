@@ -182,7 +182,7 @@ def main():
         return(0)
 
     print("selected runs : \n {}".format(
-        [print(rundict.id) for rundict in rerun_list]))
+        [print(rundict.str_id) for rundict in rerun_list]))
     try:
         perturb = float(
             input('Perturb the initial position of atoms ? in Angstrom '))
@@ -334,14 +334,14 @@ def main():
             # incar["LWAVE"] = "True"
             incar['EDIFF'] = 1E-02
             incar["ISMEAR"] = -5
-            incar["LCHARG"] = "False"
+            incar["LCHARG"] = "True"
             incar["LAECHG"] = "False"
             incar["NELMDL"] = -10
             incar["PREC"] = "Accurate"
             incar["ADDGRID"] = "True"
             incar["IBRION"] = 1
             incar["NELM"] = 150
-            kpt = Kpoints.gamma_automatic(kpts=(3, 3, 3), shift=(0, 0, 0))
+            kpt = Kpoints.gamma_automatic(kpts=(1, 1, 1), shift=(0, 0, 0))
             job.user_kpoint = kpt
             print("yolo!!")
 
@@ -466,13 +466,13 @@ def filtering_runs(rerun_select, rerun_list):
                 "convex hull filtering ? : Y / n ") == "Y":
             rerun_list = read.restrict_run_list(rerun_list)
             print("selected runs : \n {}".format(
-                [print(rundict.id) for rundict in rerun_list]))
+                [print(rundict.str_id) for rundict in rerun_list]))
 
         if input("folder by folder ? : Y / n ") == "Y":
             rerun_list_tmp = rerun_list
             rerun_list = []
             for run in rerun_list_tmp:
-                if input("include {} : Y / n ".format(run.id)) == "Y":
+                if input("include {} : Y / n ".format(run.str_id)) == "Y":
                     rerun_list.append(run)
         print("nb of structures : {0} ".format(len(rerun_list)))
     return rerun_list

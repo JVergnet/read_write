@@ -514,7 +514,7 @@ def plot_COOP_OO(RunDict_list, sorting="oxidation"):
                        if v.coop_dict[bond] is not None}
         nb_axes = len(valid_coops)
         if nb_axes == 0:
-            print("no valid COOP runs for {}".format(v.id))
+            print("no valid COOP runs for {}".format(v.str_id))
             return([])
 
         nb_axes += dos_ax

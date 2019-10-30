@@ -230,7 +230,7 @@ def plot_DOS_on_axe(axe, rundict, Emin, Emax,
 
     # Print the name and energy Tags on the left of the graph
     legend = "{} Na{}\n({})".format(
-        rundict.stacking, rundict.x_na, rundict.id)
+        rundict.stacking, rundict.x_na, rundict.str_id)
     axe.text(-0.03, 0.5, legend,
              horizontalalignment='right', verticalalignment='center',
              multialignment='right', transform=axe.transAxes)

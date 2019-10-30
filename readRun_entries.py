@@ -128,12 +128,12 @@ class Rundict(ComputedStructureEntry):
         self.x_na = 0
         self.volume = None
         self.formula = None
-        self.name_tag = None
+        # self.name_tag = None
         self.spacegroup = None
         self.equivSiteList = None
         self.dOO_min = None
         self.dOO_min_indices = None
-        self.mag = None
+        # self.mag = None
         self.OO_pairs = None
         self.MMOO_quadruplets = None
         self.bader_done = False
@@ -394,7 +394,7 @@ def collect_valid_runs(
 
     tmp_list.sort(key=lambda x: x.job_folder)
     # for d in tmp_list:
-    #     print("{} / {} : {}".format(d.stacking, d.id,
+    #     print("{} / {} : {}".format(d.stacking, d.str_id,
     #                                 d.status_string))
 
     converged_runs = []
@@ -650,7 +650,7 @@ def restrict_run_list(all_runs_input):
                 "[h]ull": " structures on the convex hull"
             }
             while list_choice is None:
-                print("Avaliable filtering : "+" // ".join(choice_dict.keys))
+                print("Avaliable filtering : "+" // ".join(choice_dict.keys()))
                 list_choice = input("filter structure list ? :")
                 choice_dict = {"a": 1, "c": 3, "m": 4, "h": 5}
                 if list_choice in choice_dict.keys():
@@ -750,6 +750,7 @@ def get_nb_cell(structure):
 
 
 def get_xna_and_formula(structure, nb_cell=1):
+    x_na = 0
     # Normalizing composition to get Nax My O2
     compo_dict = structure.composition.get_el_amt_dict()
     for key in compo_dict.keys():

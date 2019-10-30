@@ -142,7 +142,7 @@ def plot_hull_graphs(sorted_entries, **kwargs):
             legend=None,
             x_na_coords=None)
         for s in sorted_converged_entries:
-            print("{} {}/n".format(s.id, s.energy_per_fu))
+            print("{} {}/n".format(s.str_id, s.energy_per_fu))
 
     if coord is not None:
         print("\n==== HULL GRAPHS ======\n")

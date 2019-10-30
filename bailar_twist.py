@@ -492,7 +492,7 @@ def plot_OO_angles(struct_list, axes0=None):
             # if "max" in plot_type :
             # axe.plot(X_mean ,Y_max_list ,"go--",  label = "maximum")
     column_name = ["bailar angle", "trigo_angle"]
-    row_name = ["{} Na{}\n({})".format(v.stacking, v.x_na, v.id)
+    row_name = ["{} Na{}\n({})".format(v.stacking, v.x_na, v.str_id)
                 for v in struct_list]
     column_content_list = [Y_bailar_all, Y_trigo_all]
     plot_histo_charge(column_name, row_name, column_content_list,
@@ -568,7 +568,7 @@ def get_AB_dist_histo(
 
     for i, v in enumerate(vasprun_dict_list):
         id_list.append("{} Na{}\n({})".format(
-            v.stacking, v.x_na, v.id))
+            v.stacking, v.x_na, v.str_id))
         s_list.append(v.structure)
 
     for A in A_list:  # "Mn,Mg,O"
