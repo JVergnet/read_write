@@ -298,7 +298,7 @@ def plot_charge_and_mag(dosList, detailled=None, **kwargs):
     # then save them with proper name
     print("\n==== ELECTRONS IN REAL SPACE (BADER) ======\n")
 
-    coord = kwargs["coord"] if "coord" in kwargs.keys() else "xNa"
+    coord = kwargs["coord"] if "coord" in kwargs.keys() else "x_na"
 
     if detailled is None:
         detailled = 0

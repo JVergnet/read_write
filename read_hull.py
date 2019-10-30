@@ -12,7 +12,7 @@ from matplotlib.ticker import AutoMinorLocator
 import generic_plot as generic_plot
 
 
-def generate_hull_entries(run_list, remove_extremes=False, coord="xNa"):
+def generate_hull_entries(run_list, remove_extremes=False, coord="x_na"):
 
     # sort the vasRunDictList entries (a list of dict) in 3 categories
     # add formation energy ("eform" key) to each vasprun_dict
@@ -20,7 +20,7 @@ def generate_hull_entries(run_list, remove_extremes=False, coord="xNa"):
     # input ; [{vaspRun : v , param : value }
     # output : [sorted_entries , clean_entries , hull_entries]
 
-    # clean_entries : selected  entries of lowest energy for each xNa
+    # clean_entries : selected  entries of lowest energy for each x_na
     # hull_entries : clean_entries that lie on the convex hull
 
     # Sort the entries according to 1) their Na proportion and 2) their energy
@@ -37,12 +37,12 @@ def generate_hull_entries(run_list, remove_extremes=False, coord="xNa"):
 
     if remove_extremes:
         sorted_entries = [x for x in sorted_entries
-                          if x.xNa < 1 and x.xNa > 0]
+                          if x.x_na < 1 and x.x_na > 0]
 
     # Clean Entries
     # =================================================
     # Select the structure of lowest energy for each Na
-    # xNa = []
+    # x_na = []
     # voltage = []
 
     clean_entries = []
@@ -53,19 +53,19 @@ def generate_hull_entries(run_list, remove_extremes=False, coord="xNa"):
             current_Na = getattr(entry, coord)
     #       print(entry)
     # print(clean_entries)
-    # [print([r.xNa for r in L])
+    # [print([r.x_na for r in L])
     #  for L in [sorted_entries, clean_entries]]
     # compute the formation energy in meV
     # with respect to endmembers (x->0 & x->1)
-    [[xNa0, Ex0], [xNa1, Ex1]] = [[getattr(clean_entries[i], attr)
+    [[x_na0, Ex0], [x_na1, Ex1]] = [[getattr(clean_entries[i], attr)
                                    for attr in [coord, "energy_per_fu"]]
                                   for i in [0, -1]]
-    print([[xNa0, Ex0], [xNa1, Ex1]])
+    print([[x_na0, Ex0], [x_na1, Ex1]])
     for entry in sorted_entries:
         x = getattr(entry, coord)
         entry.eform = (entry.energy_per_fu
-                       - (x - xNa0) / (xNa1 - xNa0) * Ex1
-                       - (xNa1 - x) / (xNa1 - xNa0) * Ex0) * 1000
+                       - (x - x_na0) / (x_na1 - x_na0) * Ex1
+                       - (x_na1 - x) / (x_na1 - x_na0) * Ex0) * 1000
     # print("sorted entries {0} \n\n clean entries {1}\n\n"
     #      .format(sorted_entries,clean_entries))
 
@@ -121,8 +121,8 @@ def plot_hull_graphs(sorted_entries, **kwargs):
     converged_entries = [d for d in sorted_entries if d.status >= 3]
     if "coord" in kwargs.keys():
         coord = kwargs["coord"]
-    elif len(set([d.xNa for d in sorted_entries])) > 1:
-        coord = "xNa"
+    elif len(set([d.x_na for d in sorted_entries])) > 1:
+        coord = "x_na"
     elif input("convex hull on the doo? [Y]") in ["Y", "y"]:
         coord = "dOO_min"
     else:
@@ -141,7 +141,7 @@ def plot_hull_graphs(sorted_entries, **kwargs):
             sorted_converged_entries,
             prop_list=['energy_per_fu'],
             legend=None,
-            xNa_coords=None)
+            x_na_coords=None)
         for s in sorted_converged_entries:
             print("{} {}/n".format(s.id, s.energy_per_fu))
 
@@ -158,7 +158,7 @@ def plot_hull_graphs(sorted_entries, **kwargs):
             hull_entries = [d for d in sorted_entries if d.status >= 5]
             plot_convex_hull(converged_entries, coord=coord)
 
-            if coord == "xNa":
+            if coord == "x_na":
                 if "voltage" in kwargs.keys():
                     voltage = kwargs["hull"]
                 else:
@@ -168,12 +168,12 @@ def plot_hull_graphs(sorted_entries, **kwargs):
                     plot_voltage_curve(hull_entries)
 
 
-def plot_convex_hull(sorted_entries, coord='xNa'):
+def plot_convex_hull(sorted_entries, coord='x_na'):
 
     clean_entries = [d for d in sorted_entries if d.status >= 4]
     hull_entries = [d for d in sorted_entries if d.status >= 5]
 
-    stacking_list = set([e.stacking for e in sorted_entries])
+    stacking_list = {e.stacking for e in sorted_entries}
 
     print("stacking list : ", stacking_list)
 
@@ -187,20 +187,20 @@ def plot_convex_hull(sorted_entries, coord='xNa'):
     specific_color_dict = {"P3": "#b700ffff",
                            "O3": "#00baffff"}
     color_dict.update(specific_color_dict)
-    plotTitle = "Convex Hull"
+    plot_title = "Convex Hull"
 
-    fig = plt.figure(plotTitle)
+    fig = plt.figure(plot_title)
 
     # fig.suptitle(hull_entries[-1]["folder"]+"\n"
     #              +hull_entries[-1]["formula"]+"\n"
     #              +plotTitle,
     #              fontsize="large")
     # plotting
-    dotSize = 40
+    dot_size = 40
 
     axe = fig.add_subplot(1, 1, 1)
 
-    # Plot error bar on energies of structures with lowest energy at given xNa
+    # Plot error bar on energies of structures with lowest energy at given x_na
     # symmetric or not depending if they are (or not) on the convex hull
 
     if True:  # input("add error bars for ambient temp ? [Y/N] ")=="Y" :
@@ -234,7 +234,7 @@ def plot_convex_hull(sorted_entries, coord='xNa'):
         E = X_E[:, 1]
         # print(E)
         axe.scatter(
-            X, E, s=dotSize,
+            X, E, s=dot_size,
             facecolors='none',
             edgecolor=color_dict[stacking],
             label=stacking)
@@ -247,7 +247,7 @@ def plot_convex_hull(sorted_entries, coord='xNa'):
     E = [x[1] for x in X_E_C]
     C = [x[2] for x in X_E_C]
     # print(E)
-    axe.scatter(X, E, s=dotSize, color=C, edgecolor='face')
+    axe.scatter(X, E, s=dot_size, color=C, edgecolor='face')
 
     # link entries on the convex hull (black line) [hull_entries]
 
@@ -268,7 +268,7 @@ def plot_convex_hull(sorted_entries, coord='xNa'):
     # xlim(max(X), min(X))
 
     plt.show(block=False)
-    generic_plot.save_fig(fig, plotTitle)
+    generic_plot.save_fig(fig, plot_title)
 
     return(fig)
 
@@ -281,7 +281,7 @@ def plot_voltage_curve(hull_entries):
     voltage_list = []
     eNa = -2  # -1.47
     for i in range(0, len(hull_entries) - 1):
-        dNa = hull_entries[i + 1].xNa - hull_entries[i].xNa
+        dNa = hull_entries[i + 1].x_na - hull_entries[i].x_na
         E1 = hull_entries[i].energy_per_fu
         E2 = hull_entries[i + 1].energy_per_fu
         # print("E1={0} \n E2={1} \n dNa = {2} \nV = -(E2-E1-eNa) = {3}"
@@ -289,8 +289,8 @@ def plot_voltage_curve(hull_entries):
 
         voltage_list.append(-((E2 - E1) / dNa - eNa))
 
-    voltage_col = LineCollection([[(hull_entries[i].xNa, voltage_list[i]),
-                                   (hull_entries[i + 1].xNa, voltage_list[i])]
+    voltage_col = LineCollection([[(hull_entries[i].x_na, voltage_list[i]),
+                                   (hull_entries[i + 1].x_na, voltage_list[i])]
                                   for i in range(0, len(hull_entries) - 1)])
 
     plotTitle = "Predicted Voltage Curve"

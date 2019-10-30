@@ -439,7 +439,7 @@ class Filter_page(pages.Blank_page):
             help_txt = """
 [a]ll : all runs that have at least a POSCAR
 [c]onverged : all converged vaspruns
-[m]inima : structures of lowest energy for each xNa
+[m]inima : structures of lowest energy for each x_na
 [h]ull : structures on the convex hull
 """
             tk.messagebox.showinfo('Filter help', help_txt)
@@ -455,7 +455,7 @@ class Filter_page(pages.Blank_page):
         text_value.pack(fill=tk.BOTH, expand=1, padx=5, pady=5, side=tk.TOP)
 
         combo_value = ttk.Combobox(frame_select)
-        combo_value['values'] = ("xNa", "min OO distance")
+        combo_value['values'] = ("x_na", "min OO distance")
         combo_value.current(0)
         combo_value.pack(fill=tk.BOTH, expand=1, padx=5, pady=5, side=tk.TOP)
         self.hull_value = combo_value.get()

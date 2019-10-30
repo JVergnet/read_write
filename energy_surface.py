@@ -23,13 +23,13 @@ def plot_scatter_mesh_cell_shape(struct_list):
     marks = ['^', 'o', '*', '+']
 
     xtag = "disto"
-    ytag = "xNa"
+    ytag = "x_na"
     XY = np.array([[d[xtag], d[ytag], d["eform"]] for d in struct_list])
 
     fig = plt.figure()
     ax = Axes3D(fig)
 
-    # plot cell params  as a function of the distortion and xNa
+    # plot cell params  as a function of the distortion and x_na
 
     ZABC = np.array([list(d["structure"].lattice.lengths_and_angles[0])
                      for d in struct_list])
@@ -55,7 +55,7 @@ def plot_scatter_mesh_cell_shape(struct_list):
     ax.set_ylabel("cell parameter")
     fig.legend()
 
-    # plot  V of the cell as a function of the distortion and xNa
+    # plot  V of the cell as a function of the distortion and x_na
     fig2 = plt.figure()
     ax2 = Axes3D(fig2)
 
@@ -73,7 +73,7 @@ def plot_scatter_mesh_cell_shape(struct_list):
 def plot_scatter_surface(
         sorted_entries,
         xtag="disto",
-        ytag="xNa",
+        ytag="x_na",
         ztag="eform"):
 
     fig = plt.figure()
@@ -149,7 +149,7 @@ def generate_stacking_dict(sorted_entries, chem_env_done):
 
                 distortion_mesh = sorted(
                     distortion_mesh, key=itemgetter(
-                        'xNa', "disto_prec"))
+                        'x_na', "disto_prec"))
 
             # # Write JSON file
             # with io.open('distortion_mesh_data.json', 'w') as outfile:

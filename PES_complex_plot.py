@@ -60,12 +60,12 @@ def get_OO_angles_prop(struct_list, prop="ediff"):
     struct_list = nupdown.get_mag_tag_list(
         struct_list) if prop == "mag" else struct_list
     # make e_valley tag
-    # slicing the list by equal xNa (to get valleys)
-    for xNa in set([d["xNa"] for d in struct_list]):
-        struct_list_slice = [d for d in struct_list if d["xNa"] == xNa]
+    # slicing the list by equal x_na (to get valleys)
+    for x_na in set([d["x_na"] for d in struct_list]):
+        struct_list_slice = [d for d in struct_list if d["x_na"] == x_na]
         prop_min = min([d[prop] for d in struct_list_slice])
-        print(" xNa ={} :  {} runs, E min = {:.2f} ".format(
-            xNa, len(struct_list_slice), prop_min))
+        print(" x_na ={} :  {} runs, E min = {:.2f} ".format(
+            x_na, len(struct_list_slice), prop_min))
         for d in struct_list_slice:
             d["e_valley"] = 1000 * \
                 (d[prop] - prop_min) if prop == "ediff" else d[prop]
@@ -81,7 +81,7 @@ def get_OO_angles_prop(struct_list, prop="ediff"):
                        for MMOO in d["MMOO_quadruplets"]])
         Z_bailar_all.append(YZ[:, 0])  # Z_bailar
         Y_trigo_all.append(YZ[:, 1])  # Y_trigo
-        X_all.append(np.ones_like(YZ[:, 1]) * d["xNa"])
+        X_all.append(np.ones_like(YZ[:, 1]) * d["x_na"])
         E_all.append(np.ones_like(YZ[:, 1]) * d["e_valley"])
 
     Z_bailar_all = np.vstack(Z_bailar_all)
@@ -211,7 +211,7 @@ def plot_relax_data_only(data_relax_list, scene):
     fig = go.Figure(data=data_relax_list, layout=layout)
     fig['layout']['scene'].update(scene)
     fig['layout'].update(
-        title='Energy of relaxed structures normalized by lowest energy at each xNa')
+        title='Energy of relaxed structures normalized by lowest energy at each x_na')
     po.plot(fig, filename='energy_angles_relax_only.html')
     return(fig)
 
@@ -226,7 +226,7 @@ def plot_mesh_data_only(data_mesh, scene):
     fig = go.Figure(data=data, layout=layout)
     fig['layout']['scene'].update(scene)
     fig['layout'].update(
-        title='Energy of frozen structures normalized by lowest energy at each xNa')
+        title='Energy of frozen structures normalized by lowest energy at each x_na')
     po.plot(fig, filename='energy_angles_mesh_only.html')
     return(fig)
 
@@ -512,7 +512,7 @@ def get_isosurface_data(interp_E, iso_value, XYZE, nb_grid_pts):
 
 def interpolate_PES(computed_mesh):
 
-    XYZ = np.array([[d["disto_prec"], d["xNa"], d['eform']] for d in computed_mesh
+    XYZ = np.array([[d["disto_prec"], d["x_na"], d['eform']] for d in computed_mesh
                     if d["status"] >= 3 and d["disto_prec"] > 0.39])
 
     # interpolation of the grid of computed points
@@ -549,7 +549,7 @@ def plot_PES_3D(struct_list, distortion_mesh):
     for filter_lvl, color, legend, size in [
             (5, "red", "relaxed : on hull", 200), (4, "orange", "relaxed : off-hull", 100)]:
 
-        XYZ = np.array([[d["disto"], d["xNa"], d['eform']]
+        XYZ = np.array([[d["disto"], d["x_na"], d['eform']]
                         for d in struct_list if d["status"] == filter_lvl])
         ax.scatter(XYZ[:, 0], XYZ[:, 1], XYZ[:, 2], zdir='z',
                    c=color, marker="*", label=legend, s=size)
@@ -558,7 +558,7 @@ def plot_PES_3D(struct_list, distortion_mesh):
     for filter_lvl, color, legend, size in [(5, "red", "mesh : on hull", 200),
                                             (4, "blue", "mesh : off-hull ", 100),
                                             (3, "blue", "Calculated mesh point", 10)]:
-        XYZ = np.array([[d["disto"], d["xNa"], d['eform']]
+        XYZ = np.array([[d["disto"], d["x_na"], d['eform']]
                         for d in distortion_mesh if d["status"] == filter_lvl])
         ax.scatter(XYZ[:, 0], XYZ[:, 1], XYZ[:, 2], zdir='z',
                    c=color, marker="o", label=legend, s=size)
@@ -593,7 +593,7 @@ def plot_PES_projected(struct_list, distortion_mesh):
     grid_x, grid_y, interp_Z = interpolate_PES(distortion_mesh)
     print(np.shape(grid_x), np.shape(grid_y), np.shape(interp_Z))
 
-    Y = grid_y[0, :]  # xNa
+    Y = grid_y[0, :]  # x_na
     x = grid_x[:, 0]  # distortion
     print(x, Y)
     # for j in range(len(Y)) :
@@ -628,7 +628,7 @@ def plot_PES_projected(struct_list, distortion_mesh):
     for filter_lvl, color, legend, size in [
             (5, "red", "relaxed : on hull", 100), (4, "orangered", "relaxed : off-hull", 50)]:
 
-        XY = np.array([[d["disto"], d["xNa"]]
+        XY = np.array([[d["disto"], d["x_na"]]
                        for d in struct_list if d["status"] == filter_lvl])
         ax.scatter(XY[:, 0], XY[:, 1], c=color,
                    marker="*", label=legend, s=size)

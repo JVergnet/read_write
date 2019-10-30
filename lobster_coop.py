@@ -552,7 +552,7 @@ def plot_COOP_OO(RunDict_list, sorting="oxidation"):
             # (bottom_DOS, top_DOS) = ax_dos.get_ylim()
             # ax_dos.set_ylim([top_DOS * (bottom_COOP / top_COOP), top_DOS])
 
-            # axes[-1].text(-0.05 , 0.5 , "Na {} \nEf={:.4f}".format(v["xNa"],v["vaspRun"].efermi),
+            # axes[-1].text(-0.05 , 0.5 , "Na {} \nEf={:.4f}".format(v["x_na"],v["vaspRun"].efermi),
             #      weight='bold',size='large',
             #     horizontalalignment='right', verticalalignment='center',
             #     multialignment='right', transform=axes[-1].transAxes)

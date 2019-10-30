@@ -49,7 +49,7 @@ def plot_site_value_evolution(
         sorted_entries,
         specie,
         value='charge',
-        coord="xNa",
+        coord="x_na",
         plot_type=None,
         axe0=None):
     # get the value (charge or  magmom) of each site of a given specie
@@ -106,7 +106,7 @@ def plot_site_value_evolution(
         for i, run in enumerate(dosList):
             try:
                 nbSpecie = len(run.structure.indices_from_symbol(specie))
-                # runDict["xNa"]= round(D["Na"]/nbCell , 2)
+                # runDict["x_na"]= round(D["Na"]/nbCell , 2)
                 # nbCell = run.nb_cell
                 # print("nb cell : {}    nb specie  : {} " .format(nbCell , nbSpecie ) )
                 if nbSpecie > 0:
@@ -186,7 +186,7 @@ def plot_structure_value_evolution(
         sorted_entries,
         prop_list=['dOO_min', 'bandgap'],
         legend=None,
-        xNa_coords=None):
+        x_na_coords=None):
     stacking_list = list(set([e.stacking for e in sorted_entries]))
     # for e in sorted_entries :
     #     if e["stacking"] not in stacking_list :
@@ -197,10 +197,10 @@ def plot_structure_value_evolution(
     else:
         legend = " of {}".format(legend)
 
-    if xNa_coords is None:
-        xNa_coords = "xNa" if len(
-            set([run.xNa for run in sorted_entries])) > 1 else "name"
-        print("automatic determination of coords : {}".format(xNa_coords))
+    if x_na_coords is None:
+        x_na_coords = "x_na" if len(
+            set([run.x_na for run in sorted_entries])) > 1 else "name"
+        print("automatic determination of coords : {}".format(x_na_coords))
 
     # prop_list = ['dOO_min' , 'bandgap']
     converged_entries = [d for d in sorted_entries if d.status >= 3]
@@ -214,7 +214,7 @@ def plot_structure_value_evolution(
         fig.suptitle(plotTitle, fontsize="large")
         axe = fig.add_subplot(1, 1, 1)
 
-        if xNa_coords == "name":
+        if x_na_coords == "name":
             # X_Y_name = np.array([ [ i,s.get(prop, 0),s["nameTag"] ] for (i,s) in enumerate(converged_entries)
             #                 if (s.get(prop, None) is not None ) ] )
             #print(X , Y)
@@ -238,15 +238,15 @@ def plot_structure_value_evolution(
             for stack in stacking_list:
                 stack_list = copy.deepcopy(
                     [s for s in sorted_entries if s.stacking == stack])
-                if xNa_coords == "xNa":
+                if x_na_coords == "x_na":
                     stack_list = hull.generate_hull_entries(stack_list)
-                    X_Y = np.array([[s.xNa, getattr(s, prop)] for s in stack_list
+                    X_Y = np.array([[s.x_na, getattr(s, prop)] for s in stack_list
                                     if (s.status >= 4 and hasattr(s, prop))])
                     # print(X , Y)
                     axe.plot(X_Y[:, 0], X_Y[:, 1], "o--",
                              label="minimal {}".format(stack))
 
-                X_Y = np.array([[getattr(s, xNa_coords), getattr(s, prop)]
+                X_Y = np.array([[getattr(s, x_na_coords), getattr(s, prop)]
                                 for s in stack_list
                                 if (s.status == 3 and hasattr(s, prop))])
                 # print(X , Y)
@@ -255,12 +255,12 @@ def plot_structure_value_evolution(
                              label="non-min {}".format(stack))
                 except Exception as ex:
                     print(ex)
-            if xNa_coords == "xNa":
+            if x_na_coords == "x_na":
                 for entries, color, lab in [
                         (hull_entries, "black", "on hull"),
                         (clean_entries, "red", "off-hull minimum")]:
                     try:
-                        X_Y = np.array([[s.xNa, getattr(s, prop)]
+                        X_Y = np.array([[s.x_na, getattr(s, prop)]
                                         for s in entries
                                         if hasattr(s, prop)])
                         X = X_Y[:, 0]
@@ -275,7 +275,7 @@ def plot_structure_value_evolution(
                             "exception while plotting {} circles : {}".format(
                                 lab, ex))
 
-            axe.set_xlabel(xNa_coords)  # ,fontsize=18, fontname ="Arial" )
+            axe.set_xlabel(x_na_coords)  # ,fontsize=18, fontname ="Arial" )
             axe.xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
 
             axe.legend()

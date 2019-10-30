@@ -58,15 +58,15 @@ def plot_mag_graphs(rundict_list):
         sorted_runs = sorted(
             rundict_list,
             key=lambda k: (
-                k.xNa,
+                k.x_na,
                 k.mag,
                 k.energy_per_fu))
         selected_runs = [sorted_runs[0]]
         for r in sorted_runs:
-            if r.mag != selected_runs[-1].mag or r.xNa != selected_runs[-1].xNa:
+            if r.mag != selected_runs[-1].mag or r.x_na != selected_runs[-1].x_na:
                 selected_runs.append(r)
         for r in selected_runs:
-            print(r.xNa, r.mag, r.stacking)
+            print(r.x_na, r.mag, r.stacking)
 
         # run_index = {}
 
@@ -76,7 +76,7 @@ def plot_mag_graphs(rundict_list):
             plot_mag_surface(selected_runs, colorcode=colorcode)
 
         if input("Plot mag heatmap ? [Y]") in ["Y", "y"]:
-            selected_runs = [s for s in selected_runs if s["xNa"] > 0.28]
+            selected_runs = [s for s in selected_runs if s["x_na"] > 0.28]
             plot_mag_heatmap(selected_runs)
 
     if input("Plot nelect heatmap ? [Y]") in ["Y", "y"]:
@@ -180,18 +180,18 @@ def plot_mag_heatmap(input_rundict_list):
     rundict_list = ([d for d in input_rundict_list if (
         d.status >= 3 and d.mag >= 2 and d.mag <= 3.7)])
 
-    for x_na in set([d.xNa for d in rundict_list]):
-        struct_list_slice = [d for d in rundict_list if d.xNa == x_na]
+    for x_na in set([d.x_na for d in rundict_list]):
+        struct_list_slice = [d for d in rundict_list if d.x_na == x_na]
         e_min = min([d.energy_per_fu for d in struct_list_slice])
         print(
-            " xNa ={} :  {} runs, E min = {:.2f} ".format(
+            " x_na ={} :  {} runs, E min = {:.2f} ".format(
                 x_na,
                 len(struct_list_slice),
                 e_min))
         for d in struct_list_slice:
             d.e_valley = 1000 * (d.energy_per_fu - e_min)
 
-    x_y_e = np.array([[d.xNa, d.mag, d.e_valley] for d in rundict_list])
+    x_y_e = np.array([[d.x_na, d.mag, d.e_valley] for d in rundict_list])
     # XYE =  np.flipud( XYE)
     # interpolation of the grid of computed points
     x = make_linspace(x_y_e)
@@ -346,16 +346,16 @@ def plot_mag_surface(rundict_list, colorcode="O_mag"):
         return(False)
 
     mag_list = rundict_list
-    for x_na in set([d.xNa for d in mag_list]):
-        struct_list_slice = [d for d in mag_list if d.xNa == x_na]
+    for x_na in set([d.x_na for d in mag_list]):
+        struct_list_slice = [d for d in mag_list if d.x_na == x_na]
         e_min = min([d.energy_per_fu for d in struct_list_slice])
         print(
-            " xNa ={} :  {} runs, E min = {:.2f} ".format(
+            " x_na ={} :  {} runs, E min = {:.2f} ".format(
                 x_na, len(struct_list_slice), e_min))
         for d in struct_list_slice:
             d.e_valley = 1000 * (d.energy_per_fu - e_min)
 
-    x_y_e = np.array([[d.xNa, d.mag, d.e_valley]
+    x_y_e = np.array([[d.x_na, d.mag, d.e_valley]
                       for d in mag_list if d.status >= 3])
 
     # interpolation of the grid of computed points
@@ -408,7 +408,7 @@ def plot_mag_surface(rundict_list, colorcode="O_mag"):
 
     textz = [
         [
-            'xNa: ' +
+            'x_na: ' +
             '{:0.2f}'.format(
                 grid_x[i][j]) +
             '<br>Sz: ' +

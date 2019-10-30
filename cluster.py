@@ -18,13 +18,13 @@ def get_min_OO_dist(s):
     o_index = np.array(list(s.indices_from_symbol("O")))
     nb_O = len(o_index)
     min_dist = 1000
-    M = s.distance_matrix
+    dist_mat = s.distance_matrix
     indices = None
     for i in range(nb_O):
         for j in range(i + 1, nb_O):
             #print(M[o_index[i],o_index[j]] , min_dist)
-            if min_dist > M[o_index[i], o_index[j]]:
-                min_dist = M[o_index[i], o_index[j]]
+            if min_dist > dist_mat[o_index[i], o_index[j]]:
+                min_dist = dist_mat[o_index[i], o_index[j]]
                 indices = [i, j]
     return(min_dist, indices)
 
@@ -841,10 +841,12 @@ def shifted_sites_after_prismatic_disto(struct, metal_index, angle):
     O_above = [O['site_index'] for O in neighbor_O if O['site'].z - Z > 0]
     O_below = [O['site_index'] for O in neighbor_O if O['site'].z - Z < 0]
 
-    symOperation = find_symmop(struct, angle, translation=(0, 0, 0), center=[X, Y, Z])
-    trueSites += find_translated_sites(struct, O_above,symOperation)
+    symOperation = find_symmop(
+        struct, angle, translation=(0, 0, 0), center=[X, Y, Z])
+    trueSites += find_translated_sites(struct, O_above, symOperation)
 
-    symOperation = find_symmop(struct, -angle, translation=(0, 0, 0), center=[X, Y, Z])     
+    symOperation = find_symmop(
+        struct, -angle, translation=(0, 0, 0), center=[X, Y, Z])
     trueSites += find_translated_sites(struct, O_below, symOperation)
 
     return(trueSites)

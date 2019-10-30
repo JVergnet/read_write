@@ -121,10 +121,10 @@ def plot_CSM(struct_list, stacking_name=None, axe0=None):
     else:
         axe = axe0
 
-    print("Xna :{}".format([dict_car.xNa for dict_car in struct_list]))
+    print("x_na :{}".format([dict_car.x_na for dict_car in struct_list]))
     for specie in species:
         for coord in coords:
-            XY = np.array([[dict_car.xNa,
+            XY = np.array([[dict_car.x_na,
                             dict_car.data["distortion"][specie].get(coord, 0)]
                            for dict_car in struct_list
                            if dict_car.data["distortion"][specie].get(coord, None)
@@ -171,7 +171,7 @@ def plot_bailar_path(
         # [ [dict_car["distortion"][specie].get(coord, 0) for dict_car in struct_list ] for coord in coords]
         axe.scatter(X, Y, label="{} ({})".format(specie, stacking_name))
         if annotate:
-            tags = [dict_car["xNa"] for dict_car in struct_list]
+            tags = [dict_car["x_na"] for dict_car in struct_list]
             for label, x, y in zip(tags, X, Y):
                 axe.annotate(
                     label,
@@ -224,8 +224,8 @@ def plot_cell_param(struct_list, ax0=None):
         fig = plt.figure()
         axe = fig.add_subplot(111)
 
-    # plot cell params  as a function of the distortion and xNa
-    X = np.array([d.xNa for d in struct_list])
+    # plot cell params  as a function of the distortion and x_na
+    X = np.array([d.x_na for d in struct_list])
 
     YABC = np.array([list(d.structure.lattice.lengths_and_angles[0])
                      for d in struct_list])
@@ -250,17 +250,17 @@ def plot_cell_param(struct_list, ax0=None):
 
 def plot_cell_volume(struct_list, ax0=None):
 
-    # plot  V of the cell as a function of the distortion and xNa
+    # plot  V of the cell as a function of the distortion and x_na
     if ax0 is not None:
         axe = ax0
     else:
         fig = generic_plot.plot_structure_value_evolution(struct_list,
                                                           prop_list=['volume'],
-                                                          xNa_coords=False)
+                                                          x_na_coords=False)
         # fig = plt.figure()
     #     axe = fig.add_subplot(111)
 
-    # X = np.array([d["xNa"] for d in struct_list])
+    # X = np.array([d["x_na"] for d in struct_list])
     # YV = np.array([d["structure"].lattice.volume / d["nb_cell"]
     #                for d in struct_list])
 
@@ -289,7 +289,7 @@ def plot_OO_compression(struct_list, ax0=None):
                                      struct[oo[1]].frac_coords)[2])
              * struct.lattice.c for oo in d.OO_pairs]
 
-        X = np.ones(len(d.OO_pairs)) * d.xNa
+        X = np.ones(len(d.OO_pairs)) * d.x_na
 
         Y_all.append(Y)
         X_all.append(X)
@@ -302,9 +302,9 @@ def plot_OO_compression(struct_list, ax0=None):
     Y_min_list = np.amin(Y_all, axis=1)
     Y_max_list = np.amax(Y_all, axis=1)
     Y_mean_list = np.sum(Y_all, axis=1) * (1 / len(d.OO_pairs))
-    X_mean = np.array([d.xNa for d in struct_list])
+    X_mean = np.array([d.x_na for d in struct_list])
     print(Y_mean_list.shape, X_mean.shape)
-    # plot  V of the cell as a function of the distortion and xNa
+    # plot  V of the cell as a function of the distortion and x_na
     if ax0 is not None:
         axe = ax0
     else:
@@ -458,7 +458,7 @@ def plot_OO_angles(struct_list, axes0=None):
                       for MMOO in d.MMOO_quadruplets])
         Y_bailar = Y[:, 0]
         Y_trigo = Y[:, 1]
-        X = np.ones(len(d.MMOO_quadruplets)) * d.xNa
+        X = np.ones(len(d.MMOO_quadruplets)) * d.x_na
 
         Y_bailar_all.append(Y_bailar)
         Y_trigo_all.append(Y_trigo)
@@ -476,9 +476,9 @@ def plot_OO_angles(struct_list, axes0=None):
         # Y_min_list = np.amin(Y_all, axis=1)
         # Y_max_list = np.amax(Y_all, axis=1)
         Y_mean_list = np.sum(Y_all, axis=1) * (1 / len(d.MMOO_quadruplets))
-        X_mean = np.array([d.xNa for d in struct_list])
+        X_mean = np.array([d.x_na for d in struct_list])
         print(Y_mean_list.shape, X_mean.shape)
-        # plot  V of the cell as a function of the distortion and xNa
+        # plot  V of the cell as a function of the distortion and x_na
 
         if True:
             #    if "per_site" in plot_type :
@@ -492,7 +492,7 @@ def plot_OO_angles(struct_list, axes0=None):
             # if "max" in plot_type :
             # axe.plot(X_mean ,Y_max_list ,"go--",  label = "maximum")
     column_name = ["bailar angle", "trigo_angle"]
-    row_name = ["{} Na{}\n({})".format(v.stacking, v.xNa, v.id)
+    row_name = ["{} Na{}\n({})".format(v.stacking, v.x_na, v.id)
                 for v in struct_list]
     column_content_list = [Y_bailar_all, Y_trigo_all]
     plot_histo_charge(column_name, row_name, column_content_list,
@@ -568,7 +568,7 @@ def get_AB_dist_histo(
 
     for i, v in enumerate(vasprun_dict_list):
         id_list.append("{} Na{}\n({})".format(
-            v.stacking, v.xNa, v.id))
+            v.stacking, v.x_na, v.id))
         s_list.append(v.structure)
 
     for A in A_list:  # "Mn,Mg,O"

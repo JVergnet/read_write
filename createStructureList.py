@@ -198,7 +198,7 @@ def desodiation_tree(
     # xmax_rem = 1 - xmax
 
     pristineStruct = pristine_job.structure
-    abs_frac_left = np.append([pristine_job.xNa],
+    abs_frac_left = np.append([pristine_job.x_na],
                               np.linspace(xmax, xmin,
                                           nb_compo,
                                           endpoint=True))

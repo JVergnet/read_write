@@ -321,7 +321,7 @@ class Hull_page(Plot_page):
                     filtered_run_list, prop_list=['ediff'], legend=None)
 
             elif hull_plot_type == "hull":
-                coord = "xNa"
+                coord = "x_na"
                 fig = hull.plot_convex_hull(filtered_run_list, coord=coord)
 
             elif hull_plot_type == "voltage":
@@ -361,7 +361,7 @@ HELP ON HULL !!
 
         self.coord = combo_X_coord.get()
 
-        # === SELECTION : Xna range
+        # === SELECTION : x_na range
         frame_x_range = tk.Frame(frame_top)
         frame_x_range.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
 
@@ -513,7 +513,7 @@ class Bader_page(Plot_page):
                         self.filtered_run_list,
                         elt,
                         value=qty,
-                        coord="xNa",
+                        coord="x_na",
                         plot_type=[0, 1])
 
                     self.display_plot(fig, frame)

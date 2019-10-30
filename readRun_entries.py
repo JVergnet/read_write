@@ -73,7 +73,7 @@ def get_job_list(main_folder, file_system_choice=None):
             "[j]ob / [p]roject / [s]uper_project ?  :  ")
 
     if file_system_choice[0] == "p":
-        file_system = "p"
+        # file_system = "p"
         d = main_folder
         subdir_list = [
             os.path.join(d, o)
@@ -81,7 +81,7 @@ def get_job_list(main_folder, file_system_choice=None):
             if os.path.isdir(os.path.join(d, o))]
 
     elif file_system_choice[0] == "s":
-        file_system = "s"
+        # file_system = "s"
         d = main_folder
         subdir_list = []
         for folder in [
@@ -123,6 +123,19 @@ class Rundict(ComputedStructureEntry):
                                             parameters=c_e.parameters,
                                             data=c_e.data,
                                             entry_id=None)
+        # define all attributes
+        self.nb_cell = 1
+        self.x_na = 0
+        self.volume = None
+        self.formula = None
+        self.name_tag = None
+        self.spacegroup = None
+        self.equivSiteList = None
+        self.dOO_min = None
+        self.dOO_min_indices = None
+        self.mag = None
+        self.OO_pairs = None
+        self.MMOO_quadruplets = None
 
         self.generate_tags()
 #     if c_e is not None:
@@ -150,8 +163,6 @@ class Rundict(ComputedStructureEntry):
     def get_nametag(self):
         " nameTag : get name of the current structure in a string nameTag"
         structure = self.structure
-        self.nb_cell = 1
-        self.xNa = 0
 
         D = structure.composition.get_el_amt_dict()
 
@@ -168,9 +179,9 @@ class Rundict(ComputedStructureEntry):
         # Na or Li insertion ?
         for spec in ['Na', 'Li']:
             if D.get(spec, 0) > 0:
-                self.xNa = D[spec]
+                self.x_na = D[spec]
                 break
-        # print(d['xNa'])
+        # print(d['x_na'])
 
         self.volume = structure.lattice.volume / self.nb_cell
         self.formula = Composition(D).formula
@@ -190,8 +201,8 @@ class Rundict(ComputedStructureEntry):
         (self.dOO_min, self.dOO_min_indices) = \
             cluster.get_min_OO_dist(self.structure)
 
-    def coord(self, coord):
-        return({"xNa": self.xNa, "doo_min": self.doo_min}[coord])
+    # def coord(self, coord):
+    #     return({"x_na": self.x_na, "doo_min": self.doo_min}[coord])
 
     def get_magnetization(self):
         self.mag = Oszicar(self.job_folder +
@@ -201,7 +212,7 @@ class Rundict(ComputedStructureEntry):
     # runDict['bandgap'] = runDict['vaspRun'].eigenvalue_band_properties[0]
 
     def get_MMOO_tags(self):
-        """ 
+        """
         get oxygens pairs for quantification of A.R. distortion
                 /!\ Cannot define layers in Na rich compositions
         """
@@ -323,17 +334,18 @@ def collect_single_folder(job_folder, drone, vaspRun_parsing_lvl=1):
             #     print(c_e.run_type)
             # print(c_e.parameters)
             # print(type(c_e.parameters["run_type"]))
-            if type(c_e.parameters["run_type"]) is not str:
+            if not isinstance(c_e.parameters["run_type"], str):
                 c_e.parameters["run_type"] = None
+
             # print("run type changed to None")
             # print(c_e)
 
-    r = Rundict(c_e, status, job_folder)
+    rundict = Rundict(c_e, status, job_folder)
 
     if PARAM["verbose"] > 0:
-        print("sucessfully parsed : \n", r)
+        print("sucessfully parsed : \n", rundict)
 
-    return(r)
+    return(rundict)
 
 
 def collect_valid_runs(
@@ -360,7 +372,12 @@ def collect_valid_runs(
     if vaspRun_parsing_lvl is None:
         try:
             parse_choice = input(
-                "check vasprun level ? [f]ull vasprun parsing / [m]inimal vasprun parsing / [o]szicar parsing (energy & structure only) / [n]o parsing : ")
+                "check vasprun level ?\n" +
+                "\n".join([
+                    "[f]ull vasprun parsing",
+                    "[m]inimal vasprun parsing",
+                    "[o]szicar parsing (energy & structure only)",
+                    "[n]o parsing"]))
             if parse_choice[0] in ["f", "F"]:  # [f]ull parsing
                 vaspRun_parsing_lvl = 1
             elif parse_choice[0] in ["m", "M"]:  # [m]inimal parsing
@@ -421,14 +438,14 @@ def collect_valid_runs(
 def sort_run(rundict_list, sort_key="nelect"):
     # Sort the valid vasprun according to their energy
     if sort_key is None:
-        sort_key = "energy_per_atom"
+        sort_key = "energy_per_fu"
 
     class Sort:
         def nelect(self, run):
-            return(run.parameters['incar'].get("NELECT", 0))
+            return run.parameters['incar'].get("nelect", 0)
 
-        def energy_per_atom(self, run):
-            return(run.energy_per_atom)
+        def energy_per_fu(self, run):
+            return run.energy_per_fu
 
     print("sorting by {}".format(sort_key))
     sort = Sort()
@@ -441,107 +458,110 @@ def sort_run(rundict_list, sort_key="nelect"):
 # ==========================================================================
 
 
-def generate_tags(rundict_list, force=False, minimal=False):
-    global PARAM
+# def generate_tags(rundict_list, force=False, minimal=False):
+#     global PARAM
 
-    # TAG GENERATION =========================================================
-    # Computation of  various measures on the structure, called Tags
-    # these tags are printed to the log file, to the stdout and on the graph
+#     # TAG GENERATION =========================================================
+#     # Computation of  various measures on the structure, called Tags
+#     # these tags are printed to the log file, to the stdout and on the graph
 
-    # input : [{vasprun : v , 'folder' : f}]
-    # output : [{vasprun : v , 'folder' : f,
-    # nameTag : "" , energyTag : " ", structureTag:"" , baderTag : "" }]
+#     # input : [{vasprun : v , 'folder' : f}]
+#     # output : [{vasprun : v , 'folder' : f,
+#     # nameTag : "" , energyTag : " ", structureTag:"" , baderTag : "" }]
 
-    # if the tags are already generated , skip this function (unless it's
-    # forced)
-    if PARAM['generated_tags'] and not force:
-        # print(rundict_list)
-        return(rundict_list)
+#     # if the tags are already generated , skip this function (unless it's
+#     # forced)
+#     if PARAM['generated_tags'] and not force:
+#         # print(rundict_list)
+#         return(rundict_list)
 
-    vasp_run_poll = []
-    with Pool(processes=cpu_count()) as p:
-        #        zip(rundict_list, repeat(minimal))
-        vasp_run_poll = p.starmap(
-            get_tag_single_run, zip(
-                rundict_list, repeat(minimal)))
-        p.close()
-        p.join()
-    # print(vasp_run_poll)
+#     vasp_run_poll = []
+#     with Pool(processes=cpu_count()) as p:
+#         #        zip(rundict_list, repeat(minimal))
+#         vasp_run_poll = p.starmap(
+#             get_tag_single_run, zip(
+#                 rundict_list, repeat(minimal)))
+#         p.close()
+#         p.join()
+#     # print(vasp_run_poll)
 
-    try:
-        # [runDict for runDict in vasp_run_poll
-        # if runDict['xNa'] <= 1 and runDict['xNa'] >= 0]
-        sorted_entries = sorted(vasp_run_poll,
-                                key=lambda x: (x.xNa, x.energy_per_atom))
-    except Exception as ex:
-        logging.warning(
-            "failed to sort by (xNa , Etot), fall back to (xNa, folder)")
-        sorted_entries = sorted(
-            vasp_run_poll, key=lambda x: (x.xNa, x.job_folder))
+#     try:
+#         # [runDict for runDict in vasp_run_poll
+#         # if runDict['x_na'] <= 1 and runDict['x_na'] >= 0]
+#         sorted_entries = sorted(vasp_run_poll,
+#                                 key=lambda x: (x.x_na, x.energy_per_atom))
+#     except Exception as ex:
+#         logging.warning(
+#             "failed to sort by (x_na , Etot), fall back to (x_na, folder)")
+#         sorted_entries = sorted(
+#             vasp_run_poll, key=lambda x: (x.x_na, x.job_folder))
 
-    # Create a New "log" file with incremented name
-    write_log_file(sorted_entries, PARAM['mainFolder'])
+#     # Create a New "log" file with incremented name
+#     write_log_file(sorted_entries, PARAM['mainFolder'])
 
-    PARAM['generated_tags'] = True
-    # print(sorted_entries)
+#     PARAM['generated_tags'] = True
+#     # print(sorted_entries)
 
-    return(sorted_entries)
+#     return(sorted_entries)
 
 
-def write_log_file(rundict_list, logFolder):
+def write_log_file(rundict_list, log_folder):
 
-    logFileName = get_file_name(PARAM['mainFolder'], "log")
-    os.chdir(logFolder)
+    log_file_name = get_file_name(PARAM['mainFolder'], "log")
+    os.chdir(log_folder)
     # log_file = open(logFileName,"a")
-
-    for i, runDict in enumerate(rundict_list):
-        message = (
-            "\nNAME\n" +
-            runDict['nameTag'] +
-            "\n" +
-            runDict['folder'] +
-            '\n' +
-            "\nENERGY\n" +
-            runDict['energyTag'] +
-            "\n" +
-            "\nSTRUCTURE\n" +
-            runDict['structureTag'] +
-            "\n")
-
-        if runDict.get('baderTag', None) is not None:
-            message += "\nBADER\n" + runDict['baderTag'] + "\n"
-
     if input("print runs name & energies ?[Y]") == "Y":
-        print(message)
+        print_stdout = True
 
-    with open(logFileName, 'w') as log_file:
-        print("\nSaving logFile in  : {0} \n".format(logFileName))
-        log_file.write(message)
+    print("\nSaving logFile in  : {0} \n".format(log_file_name))
+    with open(log_file_name, 'w') as log_file:
+        for rundict in rundict_list:
+            message = make_rundict_str(rundict)
+            if print_stdout:
+                print(message)
+            log_file.write(message)
+
+
+def make_rundict_str(rundict):
+    message = "\n".join([
+        "NAME",
+        rundict.name_tag,
+        rundict.folder,
+        "ENERGY",
+        rundict.energy_tag,
+        "STRUCTURE",
+        rundict.structure_tag,
+    ])
+
+    if getattr(rundict, 'bader_tag', None) is not None:
+        message += "\n".join(["", "BADER", rundict.baderTag])
+    return message
 
     # log_file.close()
 
 
 def get_equiv_site_list(structure):
-    # print a list of the equivalent sites of a structure
-    # with one representative position (mainIndex)
-    # the list on all the indices , the element on the site and the
-    # multiplicity
+    """
+    print a list of the equivalent sites of a structure
+    with one representative position (mainIndex)
+    the list on all the indices , the element on the site and the
+    multiplicity
+    """
 
-    Anal = SpacegroupAnalyzer(structure, symprec=0.05)
-    symStruct = Anal.get_symmetrized_structure()
-    symList = symStruct.equivalent_indices
-    equivSiteList = []
-    for k in range(0, len(symList), 1):
+    anal = SpacegroupAnalyzer(structure, symprec=0.05)
+    sym_struct = anal.get_symmetrized_structure()
+    sym_list = sym_struct.equivalent_indices
+    equivalent_sites = []
+    for k in range(0, len(sym_list), 1):
         # ACHTUNG ! : Position in the structure start at 0
-        equivSiteList.append({
-            'mainIndex': symList[k][0],
-            'indices': symList[k],
-            'element': structure[symList[k][0]].species_string,
-            'multiplicity': len(symList[k]),
+        equivalent_sites.append({
+            'mainIndex': sym_list[k][0],
+            'indices': sym_list[k],
+            'element': structure[sym_list[k][0]].species_string,
+            'multiplicity': len(sym_list[k]),
             'charge': -1,
             'magnetization': -1})
-        # print(equivSiteList)
-    return(equivSiteList)
+    return(equivalent_sites)
 
 
 # def get_structure_tag(structure, structureAnalysis=False):
@@ -651,11 +671,11 @@ def restrict_run_list(all_runs_input):
         # ======================================
 
         try:
-            if len(set([d.xNa for d in restricted_stack_runs])) == 1 and input(
+            if len(set([d.x_na for d in restricted_stack_runs])) == 1 and input(
                     "convex hull on the doo? [Y]") in ["Y", "y"]:
                 restricted_stack_runs = hull.generate_hull_entries(
                     restricted_stack_runs, remove_extremes=None, coord="dOO_min")
-            elif input("convex hull on xNa ? [Y]") in ["Y", "y"]:
+            elif input("convex hull on x_na ? [Y]") in ["Y", "y"]:
                 restricted_stack_runs = hull.generate_hull_entries(
                     restricted_stack_runs, remove_extremes=None)
 
@@ -671,8 +691,8 @@ def restrict_run_list(all_runs_input):
                 else:
                     print(
                         "[a]ll : all runs that have at least a POSCAR \n",
-                        "[c]onverged : all converged vasprun sorted by Xna then energy\n",
-                        "[m]inima : structures of lowest energy for each xNa \n",
+                        "[c]onverged : all converged vasprun sorted by x_na then energy\n",
+                        "[m]inima : structures of lowest energy for each x_na \n",
                         "[h]ull : structures on the convex hull")
                     list_choice = None
             restricted_hull_runs = [
@@ -687,14 +707,14 @@ def restrict_run_list(all_runs_input):
         restricted_range_runs = restricted_hull_runs
         try:
             [Xmin, Xmax] = [0, 1]
-            if len(set([d.xNa for d in restricted_stack_runs])) > 1 and \
-               input("Change default xNa range [{},{}] ? [Y]".
+            if len(set([d.x_na for d in restricted_stack_runs])) > 1 and \
+               input("Change default x_na range [{},{}] ? [Y]".
                      format(Xmin, Xmax))[0] in ["Y", "y"]:
 
                 Xmin = eval(input("Xmin : "))
                 Xmax = eval(input("Xmax : "))
                 restricted_range_runs = [r for r in restricted_hull_runs
-                                         if (r.xNa >= Xmin and r.xNa <= Xmax)]
+                                         if (r.x_na >= Xmin and r.x_na <= Xmax)]
         except Exception as ex:
             print("{} : no range filtering".format(ex))
 
