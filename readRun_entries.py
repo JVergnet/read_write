@@ -106,6 +106,7 @@ class Rundict(ComputedStructureEntry):
         self.OO_pairs = None
         self.MMOO_quadruplets = None
         self.bader_done = False
+        # self.structure_data = self.structure
 
         self.generate_tags()
     # if c_e is not None:

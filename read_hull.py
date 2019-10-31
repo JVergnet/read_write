@@ -13,17 +13,18 @@ import generic_plot as generic_plot
 
 
 def generate_hull_entries(run_list, remove_extremes=False, coord="x_na"):
+    """
+     sort the vasRunDictList entries (a list of dict) in 3 categories
+    add formation energy ("eform" key) to each vasprun_dict
 
-    # sort the vasRunDictList entries (a list of dict) in 3 categories
-    # add formation energy ("eform" key) to each vasprun_dict
+    input ; [{vaspRun : v , param : value }
+    output : [sorted_entries , clean_entries , hull_entries]
 
-    # input ; [{vaspRun : v , param : value }
-    # output : [sorted_entries , clean_entries , hull_entries]
+    clean_entries : selected  entries of lowest energy for each x_na
+    hull_entries : clean_entries that lie on the convex hull
 
-    # clean_entries : selected  entries of lowest energy for each x_na
-    # hull_entries : clean_entries that lie on the convex hull
-
-    # Sort the entries according to 1) their Na proportion and 2) their energy
+    Sort the entries according to 1) their Na proportion and 2) their energy
+    """
 
     converged_entries = [d for d in run_list if d.status >= 3]
     sorted_entries = sorted(converged_entries,
@@ -73,10 +74,9 @@ def generate_hull_entries(run_list, remove_extremes=False, coord="x_na"):
     # =============================================
     # Select structures that lie on the convex hull
 
-
-# from scipy.spatial import ConvexHull
-# hull = ConvexHull(points)
-# hull_pts = points[hull.vertices,0], points[hull.vertices,1]
+    # from scipy.spatial import ConvexHull
+    # hull = ConvexHull(points)
+    # hull_pts = points[hull.vertices,0], points[hull.vertices,1]
 
     current_index = 0
     hull_entries = [clean_entries[current_index]]
@@ -87,10 +87,10 @@ def generate_hull_entries(run_list, remove_extremes=False, coord="x_na"):
         # print("current index : {}".format(current_index))
 
         for j in range(current_index + 1, len(clean_entries), 1):
-            [dNa, delta_E] = [getattr(clean_entries[j], attr) -
-                              getattr(clean_entries[current_index], attr)
-                              for attr in [coord, 'eform']]
-            slope = delta_E/dNa
+            [d_x, d_e] = [getattr(clean_entries[j], attr) -
+                          getattr(clean_entries[current_index], attr)
+                          for attr in [coord, 'eform']]
+            slope = d_e/d_x
             # print(j)
             if slope < min_slope:
                 min_slope = slope
@@ -226,35 +226,29 @@ def plot_convex_hull(sorted_entries, coord='x_na'):
             print("Exception raised for {} : {}".format(entry.nameTag, ex))
     for stacking in stacking_list:
         print("current stacking", stacking)
-        X_E = np.array([[getattr(entry, coord), entry.eform]
+        x_e = np.array([[getattr(entry, coord), entry.eform]
                         for entry in sorted_entries
                         if entry.stacking == stacking])
-        X = X_E[:, 0]
-        E = X_E[:, 1]
-        # print(E)
         axe.scatter(
-            X, E, s=dot_size,
+            x_e[:, 0], x_e[:, 1], s=dot_size,
             facecolors='none',
             edgecolor=color_dict[stacking],
             label=stacking)
 
     # Plot entries with lowest energies (filled circles) [clean_entries]
 
-    X_E_C = [[getattr(entry, coord), entry.eform, color_dict[entry.stacking]]
-             for entry in clean_entries]
-    X = [x[0] for x in X_E_C]
-    E = [x[1] for x in X_E_C]
-    C = [x[2] for x in X_E_C]
+    x_e_c = np.array([[getattr(entry, coord),
+                       entry.eform,
+                       color_dict[entry.stacking]]
+                      for entry in clean_entries])
     # print(E)
-    axe.scatter(X, E, s=dot_size, color=C, edgecolor='face')
+    axe.scatter(x_e_c[:, 0], x_e_c[:, 1], s=dot_size,
+                color=x_e_c[:, 2], edgecolor='face')
 
     # link entries on the convex hull (black line) [hull_entries]
-
-    X_E = np.array([[getattr(entry, coord), entry.eform]
+    x_e = np.array([[getattr(entry, coord), entry.eform]
                     for entry in hull_entries])
-    X = X_E[:, 0]
-    E = X_E[:, 1]
-    axe.plot(X, E, "k-")
+    axe.plot(x_e[:, 0], x_e[:, 1], "k-")
 
     axe.legend()
     axe.set_ylabel('E total (meV)')
@@ -273,45 +267,34 @@ def plot_convex_hull(sorted_entries, coord='x_na'):
 
 
 def plot_voltage_curve(hull_entries):
-    # compute OCV between stable intermediate compositions
-    # see ref below :
-    # https://www.nature.com/articles/npjcompumats20162
+    """
+    compute OCV between stable intermediate compositions
+    see ref : https://www.nature.com/articles/npjcompumats20162
+    """
 
-    voltage_list = []
-    eNa = -2  # -1.47
-    for i in range(0, len(hull_entries) - 1):
-        dNa = hull_entries[i + 1].x_na - hull_entries[i].x_na
-        E1 = hull_entries[i].energy_per_fu
-        E2 = hull_entries[i + 1].energy_per_fu
-        # print("E1={0} \n E2={1} \n dNa = {2} \nV = -(E2-E1-eNa) = {3}"
-        #     .format(E1,E2,dNa,-((E2-E1)/dNa-eNa)))
+    e_na = -2  # -1.47
 
-        voltage_list.append(-((E2 - E1) / dNa - eNa))
+    voltages = []
+    voltage_coord = []
+    for run_1, run_2 in zip(hull_entries[:-1], hull_entries[1:]):
+        d_na = run_2.x_na - run_1.x_na
+        d_e = run_2.energy_per_fu - run_1.energy_per_fu
+        v_1_2 = -(d_e / d_na - e_na)
+        voltages.append(v_1_2)
+        voltage_coord.append([(run_1.x_na, v_1_2), (run_2.x_na, v_1_2)])
 
-    voltage_col = LineCollection([[(hull_entries[i].x_na, voltage_list[i]),
-                                   (hull_entries[i + 1].x_na, voltage_list[i])]
-                                  for i in range(0, len(hull_entries) - 1)])
-
-    plotTitle = "Predicted Voltage Curve"
-
-    fig = plt.figure(plotTitle)
-
-    # fig.suptitle(hull_entries[-1]['folder']+"\n"
-    #              +hull_entries[-1]['formula']+"\n"
-    #              +plotTitle,
-    #              fontsize="large")
-
+    plot_title = "Predicted Voltage Curve"
+    fig = plt.figure(plot_title)
     axe = fig.add_subplot(1, 1, 1)
-    axe.add_collection(voltage_col)
-    axe.set_ylim([min(voltage_list) - 1, max(voltage_list) + 1])
+    axe.add_collection(LineCollection(voltages))
+    axe.set_ylabel('V equilibrium')
+    axe.set_xlabel('Na content')
+    axe.set_ylim([min(voltages) - 1, max(voltages) + 1])
 
     # axe.legend()
 
-    axe.set_ylabel('V equilibrium')
-    axe.set_xlabel('Na content')
-
     plt.show(block=False)
 
-    generic_plot.save_fig(fig, plotTitle)
+    generic_plot.save_fig(fig, plot_title)
 
-    return(fig)
+    return fig

@@ -86,22 +86,24 @@ def idv_filtering(restricted_range_runs):
 
 
 def range_filtering(restricted_hull_runs, x_coord="x_na"):
+    " restrict the runs according to the values of x_coord"
+    restricted_range_runs = restricted_hull_runs
     try:
-        [x_min, x_max] = [0, 1]
-        if len({getattr(d, x_coord) for d in restricted_hull_runs}) > 1 and \
-           input("Change default x range [{},{}] ? [Y]".
-                 format(x_min, x_max))[0] in ["Y", "y"]:
+        x_coord_values = {getattr(d, x_coord) for d in restricted_hull_runs}
+        if len(x_coord_values) > 1:
+            [x_min, x_max] = [min(x_coord_values), max(x_coord_values)]
+            if input("Change current {} range [{},{}] ? [Y]".
+                     format(x_coord, x_min, x_max))[0] in ["Y", "y"]:
 
-            x_min = float(input("Xmin : "))
-            x_max = float(input("Xmax : "))
-            restricted_range_runs = [r for r in restricted_hull_runs
-                                     if (r.x_na >= x_min and r.x_na <= x_max)]
+                x_min = float(input("X min : "))
+                x_max = float(input("X max : "))
+                restricted_range_runs = [r for r in restricted_hull_runs
+                                         if (getattr(r, x_coord) >= x_min
+                                             and getattr(r, x_coord) <= x_max)]
     except Exception as ex:
         print("{} : no range filtering".format(ex))
-        restricted_range_runs = restricted_hull_runs
-    print(
-        "number of selected runs : {}".format(
-            len(restricted_range_runs)))
+    print("number of selected runs : {}".format(
+        len(restricted_range_runs)))
     return restricted_range_runs
 
 

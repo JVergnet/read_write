@@ -68,7 +68,7 @@ def plot_site_value_evolution(
               .format(value, specie, PLOT_TYPE_LIST))
         while True:
             try:
-                plot_type.add(eval(input(
+                plot_type.add(int(input(
                     "type plot type number or [Q]uit : ")))
                 print("plot type choice  {}".format(
                     [PLOT_TYPE_LIST[n] for n in plot_type]))
@@ -88,7 +88,7 @@ def plot_site_value_evolution(
 
     stacking_list = list(set([e.stacking for e in sorted_entries]))
     for stack in stacking_list:
-        dosList = copy.deepcopy(
+        rundict_list = copy.deepcopy(
             [s for s in sorted_entries if s.stacking == stack])
 
         X_all_sites = []
@@ -99,11 +99,11 @@ def plot_site_value_evolution(
         Y_min_list = []
         Y_max_list = []
         Y_sum_list = []
-        if (len(dosList) > 1 and len(
-                set([getattr(run, coord) for run in dosList])) == 1):
+        if (len(rundict_list) > 1 and len(
+                set([getattr(run, coord) for run in rundict_list])) == 1):
             coord = None
 
-        for i, run in enumerate(dosList):
+        for i, run in enumerate(rundict_list):
             try:
                 nbSpecie = len(run.structure.indices_from_symbol(specie))
                 # runDict["x_na"]= round(D["Na"]/nbCell , 2)
@@ -170,8 +170,8 @@ def plot_site_value_evolution(
         axe.xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     else:
         # axe.xaxis.set_major_locator(MultipleLocator(1))
-        labels = [r.nameTag for r in dosList]
-        positions = [i for i in range(len(dosList))]
+        labels = [r.nameTag for r in rundict_list]
+        positions = [i for i in range(len(rundict_list))]
         # axe.set_xticklabels(labels)
         plt.xticks(positions, labels, rotation='horizontal')
 

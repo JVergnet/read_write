@@ -98,18 +98,23 @@ def plot_nelect_heatmap(input_rundict_list):
 
         rundict.doo = rundict.structure.distance_matrix[o_x[0], o_x[1]]
 
+    landscapes_to_draw = [("O", "charge", "mean", "Reds"),
+                          ("H", "charge", "mean", "Blues")]
+    nb_plots = len(landscapes_to_draw) + 1
+
     file_name = 'OO_landscape_energy'
-    fig = plt.figure(file_name, figsize=(15, 9))
-    axe = fig.add_subplot(1, 2, 1)
+    fig = plt.figure(file_name, figsize=(21, 7))
+    axe = fig.add_subplot(1, nb_plots, 1)
     plot_energy_landscape(rundict_list,
                           fig, axe,
                           attr_x="nelect", attr_y="doo")
 
-    axe = fig.add_subplot(1, 2, 2)
-    # plot_charge_landscape(rundict_list, fig, axe,
-    #                       attr_x="nelect", attr_y="doo",
-    #                       specie="O", attr_z="charge",
-    #                       attr_z_func="min", cmap='Reds')
+    for(j, (specie, attr_z, z_func, cmap)) in enumerate(landscapes_to_draw):
+        axe = fig.add_subplot(1, nb_plots, j+2)
+        plot_charge_landscape(rundict_list, fig, axe,
+                              attr_x="nelect", attr_y="doo",
+                              specie=specie, attr_z=attr_z,
+                              attr_z_func=z_func, cmap=cmap)
     fig.tight_layout()
     plt.show(block=False)
 
@@ -343,7 +348,9 @@ def plot_charge_landscape(rundict_list, fig, axe,
     grid_x, grid_y, interp_c = interp_xye(x_y_c)
     # surface_color = interp_e
     # colorbar_title = "Energy"
-    interp_nice = np.nan_to_num(interp_c)
+
+    # removing all NaN values from the array
+    interp_nice = interp_c[~np.isnan(interp_c)]
     min_e = interp_nice.min()
     max_e = interp_nice.max()
     bounds = np.linspace(min_e, max_e, num=21, endpoint=True)
@@ -409,27 +416,19 @@ def build_x_y_c(rundict_list, attr_x, attr_y,
     x_y_c = []
     for rundict in rundict_list:
         value_of_struct = 0
-        nbSpecie = len(rundict.structure.indices_from_symbol(specie))
-        if nbSpecie == 0:
+        nb_species = len(rundict.structure.indices_from_symbol(specie))
+
+        if nb_species == 0:
             print(" no {} in the structure !!".format(specie))
             value_of_struct = np.nan
             continue
-        else:
-            # get the value for each non equiv pt
 
-            sites_values = [s.properties[attr_z]
-                            for s in rundict.structure_data.sites
-                            if s.specie.name == specie]
-
-            # if attr_z_func == "mean":
-            #     value_of_struct = np.mean(sites_values)
-            # elif attr_z_func == "min":
-            #     value_of_struct = min(sites_values)
-            # elif attr_z_func == "max":
-            #     value_of_struct = max(sites_values)
-            # elif attr_z_func == "std":  # variance
-            #     value_of_struct = np.std(sites_values)
-            value_of_struct = getattr(np, attr_z_func)(sites_values)
+        # get the value for each non equiv pt
+        sites_values = [s.properties[attr_z]
+                        for s in rundict.structure_data.sites
+                        if s.specie.name == specie]
+        # perform reduction of data (min/max/mean/std) following attr_z_func
+        value_of_struct = getattr(np, attr_z_func)(sites_values)
 
         x_y_c.append([getattr(rundict, attr_x),
                       getattr(rundict, attr_y),

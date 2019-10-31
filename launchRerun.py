@@ -397,6 +397,9 @@ def main():
                 else:
                     kpt_settings = {'reciprocal_density': 300}
 
+
+FR
+
                 job.user_kpoint = kpt
                 # input_set = MITRelaxSet(
                 #     s, force_gamma=True,

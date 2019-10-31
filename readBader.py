@@ -15,56 +15,73 @@ import readRun_entries as read
 
 
 def get_bader_tags(rundict_list):
-    "fetch the bader values of each run in parallel"
-    vasp_run_poll = []
+    """
+    fetch the bader values of each run via parallel threads
+    then feed the data within rundict.structure_data
+    for readable acess later on
+    """
+    # nb : poll map cannot handle (pickle) big objects
+    # so we poll (small) arrays instead of (big) Rundict instances
+
+    poll_bader_array = []
     try:
         with Pool(processes=cpu_count()) as p:
-            vasp_run_poll = p.map(get_bader_tag_single, rundict_list)
+            poll_bader_array = p.map(get_bader_data_single, rundict_list)
             p.close()
             p.join()
 
     except Exception as ex:
         print("EXCEPTION", ex)
+
+    print("nb of bader sucess : {} / {}".format(
+        [poll[0] for poll in poll_bader_array].count(True),
+        len(rundict_list)))
+
+    for (rundict, (bader_success, bader_array)) in zip(rundict_list, poll_bader_array):
+        if not bader_success:
+            continue
+        if rundict.bader_done:
+            continue
+        struct = rundict.structure_data
+        for j, prop in enumerate(
+                ['charge', 'vol_chg', 'magnetization', 'vol_mag']):
+            struct.add_site_property(prop,
+                                     [bader_array[i][j]
+                                         for i in range(struct.num_sites)])
+        rundict.bader_done = True
+
     print("bader tag after polling")
     print(rundict_list[0].structure_data[0].properties)
-    print(vasp_run_poll.count(False))
-    return(vasp_run_poll)
+
+    return rundict_list
 
 
-def get_bader_tag_single(runDict):
+def get_bader_data_single(runDict):
     """
     Check existence of bader files / performs the calculation if no file is found
     read the data
     feed it to the "structure data" attribute of the corresponding rundict instance
+    return :
+        bool : sucess (True) or failure (False) of bader computation
+        array : bader_data_array (only if necessary)
+        bader_array[i] = (bader_charges,charge_vol,bader_magmom,magmom_vol)
     """
 
     if runDict.bader_done:
         print("bader already done for {}".format(runDict.name_tag))
-        return runDict
+        return(True, None)
 
     valid_bader_files = generate_bader_files(runDict.job_folder)
 
     if not valid_bader_files:
         print("Bader computation aborted for {}".format(runDict.name_tag))
-        return runDict
+        return(False, None)
 
-    bader_raw_data = read_bader_files(runDict.job_folder)
-    # Structure of the array :
-    # bader_array[i] = (bader_charges,charge_vol,bader_magmom,magmom_vol)
-
-    struct = runDict.structure_data
-    for j, prop in enumerate(
-            ['charge', 'vol_chg', 'magnetization', 'vol_mag']):
-        struct.add_site_property(prop, [bader_raw_data[i][j]
-                                        for i in range(struct.num_sites)])
-
-    # print(runDict.structure_data[0].properties)
-    runDict.bader_done = True
-
-    return runDict
+    bader_data_array = read_bader_files(runDict.job_folder)
+    return(True, bader_data_array)
 
 
-def generate_bader_files(folder):
+def generate_bader_files(folder, remove_mag=True):
     """
     Run bader analysis on the vasprun directories
     only keep .dat files
@@ -75,28 +92,6 @@ def generate_bader_files(folder):
     sucessful_bader = False
     try:
         print("in do_bader for folder : \n {}".format(folder))
-        # os.chdir(folder)
-        # cwd = os.getcwd()
-        # print("ch dir to folder OK : cwd = {}".format(cwd))
-
-        # # cleaning previous bader sum that didn't account for spin
-        # if os.path.exists("BADER/ACF.dat") and  os.path.exists("BADER/SPIN/ACF.dat")==False :
-        #     print("removing old bader analysis : ")
-
-        #     bader_folder =os.path.join(cwd,"BADER")
-
-        #     for bader_file in [os.path.join(bader_folder, o)
-        #                        for o in os.listdir(bader_folder)]:
-        #         #print(bader_file)
-        #         if (bader_file.split('.')[-1]=="dat") :
-        #             print("removing" ,bader_file.split("/")[-1])
-        #             os.remove(bader_file)
-        #         else :
-        #             print("moving",bader_file.split("/")[-1])
-        #             os.rename(bader_file ,
-        #                       os.path.join(cwd,bader_file.split("/")[-1]))
-        #     os.rmdir(bader_folder)
-        #     print("sucessfully removed previous bader folder\n\n")
 
         if not os.path.exists("{}/BADER/CHARGE/ACF.dat".format(folder)) and \
            not os.path.exists("{}/BADER/SPIN/ACF.dat".format(folder)):
@@ -114,21 +109,23 @@ def generate_bader_files(folder):
            os.path.exists("{}/BADER/SPIN/ACF.dat".format(folder)):
             sucessful_bader = True
 
-            print("removing useless bader files  : ")
-            bader_folder = os.path.join(folder, "BADER")
-            data_folder_list = [bader_folder] + \
-                               [os.path.join(bader_folder, data)
-                                for data in ["SPIN", "CHARGE"]]
+            if remove_mag:
+                print("removing useless bader files  : ")
+                bader_folder = os.path.join(folder, "BADER")
+                data_folder_list = [bader_folder] + \
+                    [os.path.join(bader_folder, data)
+                        for data in ["SPIN", "CHARGE"]]
 
-            for data_folder in data_folder_list:
-                for bader_file in [os.path.join(data_folder, o)
-                                   for o in os.listdir(data_folder)]:
-                    if not os.path.isdir(bader_file) and bader_file.split(
-                            '.')[-1] != "dat":
-                        print("removing", bader_file.split("/")[-1])
-                        # os.remove(bader_file)
+                for data_folder in data_folder_list:
+                    for bader_file in [os.path.join(data_folder, o)
+                                       for o in os.listdir(data_folder)]:
+                        if not os.path.isdir(bader_file) \
+                                and bader_file.split('.')[-1] != "dat":
+                            print("removing", bader_file.split("/")[-1])
+                            os.remove(bader_file)
 
-            print("sucessfully removed previous bader files (CHG,CHGCAR,AECCAR) \n\n")
+                print(
+                    "sucessfully removed previous bader files (CHG,CHGCAR,AECCAR) \n\n")
 
     except Exception as ex:
         print("do_bader failed in {} : {} : ".format(folder, ex))
@@ -294,24 +291,26 @@ def get_madelung_tag_single(runDict, force=False, verbose=0, oxi_int=False):
     return(True)
 
 
-# CHARGE
-# ======
-def plot_charge_and_mag(dosList, detailled=None, **kwargs):
+# ===== PLOTTING ======
+# =====================
+def plot_charge_and_mag(rundict_list, detailled=None, **kwargs):
+    """    
+    plot charge and magmom for each specie of a starting structure
+    then save them with proper name
+    """
 
-    # plot charge and magmom for each specie of a starting structure
-    # then save them with proper name
     print("\n==== ELECTRONS IN REAL SPACE (BADER) ======\n")
 
     coord = kwargs["coord"] if "coord" in kwargs.keys() else "x_na"
-
+    print(rundict_list[0].structure_data)
     if detailled is None:
         detailled = 0
         try:
             print("""
 plotting charge and magmom
-0=total charge only
+0 = total charge only
 1 = site charges
-2=site chg and mag,
+2 = site chg and mag,
 3 = chg & mag volumes ( < 0 to pass)\n
             """)
             detailled = int(input("Level of verbosity ?   : "))
@@ -320,7 +319,7 @@ plotting charge and magmom
 
     figures = {}
     elements = set()
-    for run in dosList:
+    for run in rundict_list:
         elements.update(
             set(run.structure.composition.get_el_amt_dict().keys()))
 
@@ -331,7 +330,7 @@ plotting charge and magmom
 
             axe = figures[fig_name].add_subplot(1, 1, 1)
             g_plot.plot_site_value_evolution(
-                dosList,
+                rundict_list,
                 specie,
                 value="charge",
                 coord=coord,
@@ -348,7 +347,7 @@ plotting charge and magmom
         for specie in elements:
             for prop in prop_list:
                 figures["{}_of_{}".format(prop, specie)] = g_plot.plot_site_value_evolution(
-                    dosList, specie, value=prop, coord=coord, plot_type=[0, 1])
+                    rundict_list, specie, value=prop, coord=coord, plot_type=[0, 1])
                 # plot_type = 0:sites 1:avg 2:min 3:max 4:sum
 
     try:
