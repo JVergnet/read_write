@@ -333,15 +333,18 @@ def main():
 
             # PARCHG
             # incar["LWAVE"] = "True"
-            incar['EDIFF'] = 1E-02
-            incar["ISMEAR"] = -5
-            incar["LCHARG"] = "True"
-            incar["LAECHG"] = "False"
-            incar["NELMDL"] = -10
-            incar["PREC"] = "Accurate"
-            incar["ADDGRID"] = "True"
-            incar["IBRION"] = 1
-            incar["NELM"] = 150
+            incar.update({
+                "ISMEAR": 0,
+                'EDIFF': 1E-02,
+                "LCHARG": "True",
+                "LAECHG": "True",
+                "NELMDL": -10,
+                "PREC": "Accurate",
+                "ADDGRID": "True",
+                "IBRION": 1,
+                "NELM": 150,
+                "SIGMA": 0.1
+            })
             kpt = Kpoints.gamma_automatic(kpts=(1, 1, 1), shift=(0, 0, 0))
             job.user_kpoint = kpt
             print("yolo!!")
@@ -394,17 +397,18 @@ def main():
                 else:
                     kpt_settings = {'reciprocal_density': 300}
 
-                    # input_set = MITRelaxSet(
-                    #     s, force_gamma=True,
-                    #     user_kpoints_settings=kpt_settings,
-                    #     user_incar_settings=incar_copy)
-                    # print(input_set.incar)
-                    # folder_name = input_set.incar['SYSTEM'].replace(
-                    #     ' ', '-').replace('.', '_')
-                    # full_folder_name = os.path.join(new_parent_dir, folder_name)
-                    # input_set.write_input(full_folder_name)
+                job.user_kpoint = kpt
+                # input_set = MITRelaxSet(
+                #     s, force_gamma=True,
+                #     user_kpoints_settings=kpt_settings,
+                #     user_incar_settings=incar_copy)
+                # print(input_set.incar)
+                # folder_name = input_set.incar['SYSTEM'].replace(
+                #     ' ', '-').replace('.', '_')
+                # full_folder_name = os.path.join(new_parent_dir, folder_name)
+                # input_set.write_input(full_folder_name)
 
-                    # print(full_folder_name, " static set generated")  #
+                # print(full_folder_name, " static set generated")  #
 
             elif incar_type == "non_SCF":
                 files_to_copy += ["CHGCAR", "CHG", "linear_KPOINTS"]

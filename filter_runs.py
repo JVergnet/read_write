@@ -146,10 +146,13 @@ def stacking_filter(all_runs_input):
     "STACKING FAMILY FILTER "
 
     stacking_set = {e.stacking for e in all_runs_input}
+    if len(stacking_set) < 2:
+        return all_runs_input
     family_array = stacking_set.add("finished")
+    print(family_array)
     family_choice = []
     print("which stacking types to plot ? ",
-          "\n".join(family_array),
+          "\n".join(iter(family_array)),
           "\nNo choice = No filtering")
     while "finished" not in family_choice:
         try:
