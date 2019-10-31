@@ -308,7 +308,7 @@ def save_fig(fig, plotTitle, save_mode=None, folder=None):
             figName = read.get_file_name(
                 folder, plotTitle.replace(
                     ' ', '_'), ext=".svg")
-            print("default name : ".format(figName))
+            print("default name : {}".format(figName))
             #print(os.getcwd(), param['mainFolder'])
     except IndexError:
         print("option not recognized, figure not saved")

@@ -130,7 +130,7 @@ def single_analysis_routine(graph_type, restricted_runs, chem_env_done, bader_do
                 restricted_runs, chem_env_done)
 
         elif graph_type == "mag":
-            nupdown.plot_mag_graphs(restricted_runs)
+            nupdown.plot_all_graphs(restricted_runs)
 
         elif graph_type == "reload":
             print("normal reload")
