@@ -465,14 +465,14 @@ def filtering_runs(rerun_select, rerun_list):
     selected_runs = rerun_list
     if input("apply further selection on runs ? : Y / n ") == "Y":
         if rerun_select in ["c"]:
-            filter_runs.sieve_lvl = select_sieve_level()
+            sieve_lvl = filter_runs.select_sieve_level()
             selected_runs = filter_runs.hull_filtering(
                 sieve_lvl, selected_runs)
             print("number of selected runs : {}".format(
                 len(selected_runs)))
 
         if input("folder by folder ? : Y / n ") == "Y":
-            selected_runs = idv_filtering(selected_runs)
+            selected_runs = filter_runs.idv_filtering(selected_runs)
             print("nb of structures : {0} ".format(len(rerun_list)))
     return rerun_list
 

@@ -51,7 +51,7 @@ def restrict_run_list(all_runs_input):
 
     restricted_idv_runs = sort_run(restricted_idv_runs, sort_key=x_coord)
 
-    return(restricted_idv_runs)
+    return restricted_idv_runs
 
 
 def sort_run(rundict_list, sort_key="nelect"):
@@ -70,7 +70,7 @@ def sort_run(rundict_list, sort_key="nelect"):
     sort = Sort()
     sorted_run_list = sorted(rundict_list,
                              key=getattr(sort, sort_key))
-    return(sorted_run_list)
+    return sorted_run_list
 
 
 def idv_filtering(restricted_range_runs):
@@ -110,20 +110,23 @@ def hull_filtering(sieve_lvl, restricted_stack_runs, x_coord="x_na"):
     filter rundicts based en convergence
     hull filtering uses a user defined x_axis against energy
     """
+    selected_runs = []
     if sieve_lvl <= 3:
-        return [d for d in restricted_stack_runs if d.status >= sieve_lvl]
+        selected_runs = [
+            d for d in restricted_stack_runs if d.status >= sieve_lvl]
 
     if sieve_lvl > 3:
 
         if len({getattr(d, x_coord) for d in restricted_stack_runs}) == 1:
             print("not enough runs for that coord !",
                   "no filtering performed")
-            return restricted_stack_runs
+            selected_runs = restricted_stack_runs
         else:
             restricted_stack_runs = hull.generate_hull_entries(
                 restricted_stack_runs, remove_extremes=None, coord="dOO_min")
-
-            return [d for d in restricted_stack_runs if d.status >= sieve_lvl]
+            selected_runs = [
+                d for d in restricted_stack_runs if d.status >= sieve_lvl]
+    return selected_runs
 
 
 def select_x_coord():

@@ -1,22 +1,14 @@
 # readRun.py projectPath
 # plots the projected DOS of all the vaspRun of the specified project
 # project/job/vasprun.xml
-# from pymatgen.io.vasp import Vasprun
-# from zipfile import ZipFile
+
 import gzip
 import json
-# from pymatgen.electronic_structure.core import Spin, OrbitalType
-# import pymatgen.analysis.diffraction.xrd as xrd
 import logging
-# from matplotlib.collections import LineCollection
 import os
 import shutil
-# import sys
-# import importlib
 import traceback
 import warnings
-# from itertools import repeat
-# import subprocess
 from multiprocessing import Pool, cpu_count
 
 from pymatgen.apps.borg.hive import (SimpleVaspToComputedEntryDrone,
@@ -27,32 +19,8 @@ from pymatgen.io.vasp.inputs import Incar
 from pymatgen.io.vasp.outputs import Oszicar  # Outcar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
-import structure_geometry_utils as cluster
 import platform_id
-# import lobster_coop as lob
-# import generic_plot as generic_plot
-# import read_hull as hull
-
-
-# from pymatgen.core.structure import Structure
-
-# import matplotlib
-
-# import matplotlib.pyplot as plt
-# import numpy as np
-# from operator import itemgetter
-# import copy
-
-# import platform
-
-
-# import bailar_twist as bailar
-# import readBader as bader
-# import readO2 as O2
-# import DOS_plot as DOS
-# import energy_surface as PES
-# import nupdown_scan as nupdown
-# import launchDisordered as launch
+import structure_geometry_utils as cluster
 
 global PARAM
 
@@ -197,10 +165,6 @@ class Rundict(ComputedStructureEntry):
             cluster.get_min_OO_dist(self.structure)
 
         self.volume = self.structure.lattice.volume / self.nb_cell
-    # def coord(self, coord):
-    #     return({"x_na": self.x_na, "doo_min": self.doo_min}[coord])
-
-    # runDict['bandgap'] = runDict['vaspRun'].eigenvalue_band_properties[0]
 
     def get_MMOO_tags(self):
         """
@@ -267,6 +231,11 @@ def if_file_exist_gz(folder, non_comp_file):
 
 
 def collect_single_folder(job_folder, drone, vaspRun_parsing_lvl=1):
+    """
+    Reading and parsing of VASP files in the job_folder folder
+    vaspRun_parsing_lvl > 0.5 : parse vasprun, else only parse vasp inputs
+    returns a Rundict instance
+    """
     # status :
     # 0 : not a job folder
     # 1 : pre-run
@@ -296,10 +265,9 @@ def collect_single_folder(job_folder, drone, vaspRun_parsing_lvl=1):
                     '{}/INCAR'.format(job_folder)).as_dict()
                 c_e.parameters.update({"incar": incar})
                 status = 2 if c_e.energy < 10000000 else 1
-
             # default energy of parser when ozscicar not read
-            # to distinguish "pre-runs"
-            #   from corrupted / suppressed vasprun
+            # to distinguish "pre-runs" from corrupted / suppressed vasprun
+
         if status > 0:
             for k in ['LDAUU', 'LDAUJ', 'LDAUL',
                       "@class", "@module"]:  # "MAGMOM"
@@ -313,14 +281,13 @@ def collect_single_folder(job_folder, drone, vaspRun_parsing_lvl=1):
                         param = json.load(file_object)
                         print(file_name, param)
                         c_e.parameters['custom'] = param
-                except Exception as ex:
+                except Exception:
                     # print(ex)
                     continue
                 else:
                     break
             # print("finished gathering c_e data")
             # if hasattr(c_e, "run_type"):
-            #     print("WOWOWOWOWOWOWWOWOWOWOWOWWOWOWOWO")
             #     print(c_e.run_type)
             # print(c_e.parameters)
             # print(type(c_e.parameters["run_type"]))
@@ -338,23 +305,20 @@ def collect_single_folder(job_folder, drone, vaspRun_parsing_lvl=1):
     return(rundict)
 
 
-def collect_valid_runs(
-        mainFolder,
-        checkDiff=False,
-        vaspRun_parsing_lvl=1,
-        file_system_choice=None):
+def collect_valid_runs(mainFolder, checkDiff=False,
+                       vaspRun_parsing_lvl=1, file_system_choice=None):
+    """
+    input : mainFolder ,{ param : value}
+    output : [ {vaspRun : v , folder : F } ]
 
+    COLLECT VALID VASPRUNS =================================================
+    Walk trhough the folders to find valid vaspruns
+    Convergence is tested by pymatgen built in fct
+    If the converged structure if different from all the others in the list,
+    it is added to the vaspRunList[]
+    Create a list of all the subfolder of the run
+    """
     global PARAM
-
-    # input : mainFolder ,{ param : value}
-    # output : [ {vaspRun : v , folder : F } ]
-
-    # COLLECT VALID VASPRUNS =================================================
-    # Walk trhough the folders to find valid vaspruns
-    # Convergence is tested by pymatgen built in fct
-    # If the converged structure if different from all the others in the list,
-    # it is added to the vaspRunList[]
-    # Create a list of all the subfolder of the run
 
     sub_dir_list, file_system_choice = get_job_list(
         mainFolder, file_system_choice=file_system_choice)
@@ -457,8 +421,6 @@ def make_rundict_str(rundict):
         message += "\n".join(["", "BADER", rundict.baderTag])
     return message
 
-    # log_file.close()
-
 
 def get_equiv_site_list(structure):
     """
@@ -484,38 +446,11 @@ def get_equiv_site_list(structure):
     return(equivalent_sites)
 
 
-# def get_structure_tag(structure, structureAnalysis=False):
-
-#     analyzer = SpacegroupAnalyzer(structure, symprec=0.1)
-#     spacegroup = analyzer.get_space_group_symbol()
-#     structureTag = "{}".format(spacegroup)
-
-#     if structureAnalysis:
-#         # calculate the metal environment of each alkali and add it to the
-#         # structureTag
-#         alkaliEnvt = cluster.alkaliBondCount(structure)
-#         # this function returns 2 arrays :one with the number of bonds
-#         # and the other normalized by the number of Na (the one we plot)
-#         coordString = "|"
-#         for coordNumber in alkaliEnvt:
-#             coordString += "{0:.0f} |".format(coordNumber * 100)
-#         structureTag += "\nNa coord :\n" + coordString
-
-#     # calculate the metal environment of each metal and add it to the
-#     # structureTag
-#         metalBond = cluster.metalBondCount(structure)
-#         # this function returns 2 arrays : one with the number of bonds
-#         # and the other normalized by the number of Na (the one we plot)
-#         coordString = "|"
-#         for coordNumber in metalBond[0]:
-#             coordString += "{0:.0f} |".format(coordNumber * 100)
-#         structureTag += "\nMe bonds [AA,BB,AB] :\n" + coordString
-#     return(structureTag)
-
-
 def get_file_name(folder, name, ext=""):
-    # create a unique filename by adding
-    # incremental suffix to the name in argument
+    """
+    create a unique filename by adding
+    incremental suffix to the name in argument
+    """
     k = 0
     basis = os.path.join(folder, name) + "_"
     file_name = basis + str(k)
@@ -557,7 +492,7 @@ def get_nb_cell(structure):
         if compo_dict.get(spec, 0) > 0:
             nb_cell = compo_dict[spec] / 2
             break
-    return(nb_cell)
+    return nb_cell
 
 
 def get_xna_and_formula(structure, nb_cell=1):
@@ -574,30 +509,3 @@ def get_xna_and_formula(structure, nb_cell=1):
             break
     formula = Composition(compo_dict).formula
     return(x_na, formula)
-
-    # 3 converged plots, 4 : all minimas (even off_hull) 5 : On hull
-    # minima
-    list_choice = None
-    choice_dict = {
-        "[a]ll": "all runs that have at least a POSCAR ",
-        "[c]onverged": " all converged vasprun sorted by x_na then energy",
-        "[m]inima": " structures of lowest energy for each x_na ",
-        "[h]ull": " structures on the convex hull"
-    }
-    try:
-        while list_choice is None:
-            print("Avaliable filtering : "+" // ".join(choice_dict.keys()))
-            list_choice = input("filter structure list ? :")
-            choice_dict = {"a": 1, "c": 3, "m": 4, "h": 5}
-            if list_choice in choice_dict.keys():
-                sieve_lvl = choice_dict[list_choice]
-            else:
-                print("\n".join(["{} : {}".format(*kv)
-                                 for kv in choice_dict.items()]))
-                list_choice = None
-    except Exception as ex:
-        print("{} : no hull filtering".format(ex))
-        print(traceback.format_exc())
-        sieve_lvl = 1
-
-    return sieve_lvl
