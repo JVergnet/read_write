@@ -11,11 +11,11 @@ import logging
 # from matplotlib.collections import LineCollection
 import os
 import shutil
-import sys
+# import sys
 # import importlib
 import traceback
 import warnings
-from itertools import repeat
+# from itertools import repeat
 # import subprocess
 from multiprocessing import Pool, cpu_count
 
@@ -31,7 +31,8 @@ import structure_geometry_utils as cluster
 import platform_id
 # import lobster_coop as lob
 # import generic_plot as generic_plot
-import read_hull as hull
+# import read_hull as hull
+
 
 # from pymatgen.core.structure import Structure
 
@@ -139,7 +140,7 @@ class Rundict(ComputedStructureEntry):
         self.bader_done = False
 
         self.generate_tags()
-#     if c_e is not None:
+    # if c_e is not None:
 
     @property
     def nelect(self):
@@ -424,76 +425,6 @@ def collect_valid_runs(
     return(valid_runs)
 
 
-def sort_run(rundict_list, sort_key="nelect"):
-    # Sort the valid vasprun according to their energy
-    if sort_key is None:
-        sort_key = "energy_per_fu"
-
-    class Sort:
-        def nelect(self, run):
-            return run.parameters['incar'].get("nelect", 0)
-
-        def energy_per_fu(self, run):
-            return run.energy_per_fu
-
-    print("sorting by {}".format(sort_key))
-    sort = Sort()
-    sorted_run_list = sorted(rundict_list,
-                             key=getattr(sort, sort_key))
-    return(sorted_run_list)
-
-
-# TAG GENERATION FUNCTIONS
-# ==========================================================================
-
-
-# def generate_tags(rundict_list, force=False, minimal=False):
-#     global PARAM
-
-#     # TAG GENERATION =========================================================
-#     # Computation of  various measures on the structure, called Tags
-#     # these tags are printed to the log file, to the stdout and on the graph
-
-#     # input : [{vasprun : v , 'folder' : f}]
-#     # output : [{vasprun : v , 'folder' : f,
-#     # nameTag : "" , energyTag : " ", structureTag:"" , baderTag : "" }]
-
-#     # if the tags are already generated , skip this function (unless it's
-#     # forced)
-#     if PARAM['generated_tags'] and not force:
-#         # print(rundict_list)
-#         return(rundict_list)
-
-#     vasp_run_poll = []
-#     with Pool(processes=cpu_count()) as p:
-#         #        zip(rundict_list, repeat(minimal))
-#         vasp_run_poll = p.starmap(
-#             get_tag_single_run, zip(
-#                 rundict_list, repeat(minimal)))
-#         p.close()
-#         p.join()
-#     # print(vasp_run_poll)
-
-#     try:
-#         # [runDict for runDict in vasp_run_poll
-#         # if runDict['x_na'] <= 1 and runDict['x_na'] >= 0]
-#         sorted_entries = sorted(vasp_run_poll,
-#                                 key=lambda x: (x.x_na, x.energy_per_atom))
-#     except Exception as ex:
-#         logging.warning(
-#             "failed to sort by (x_na , Etot), fall back to (x_na, folder)")
-#         sorted_entries = sorted(
-#             vasp_run_poll, key=lambda x: (x.x_na, x.job_folder))
-
-#     # Create a New "log" file with incremented name
-#     write_log_file(sorted_entries, PARAM['mainFolder'])
-
-#     PARAM['generated_tags'] = True
-#     # print(sorted_entries)
-
-#     return(sorted_entries)
-
-
 def write_log_file(rundict_list, log_folder):
 
     log_file_name = get_file_name(PARAM['mainFolder'], "log")
@@ -595,126 +526,6 @@ def get_file_name(folder, name, ext=""):
     return(file_name)
 
 
-def restrict_run_list(all_runs_input):
-    """
-    defines a restriction on the runs to analyze and plot
-    if the given list is not locked, performs filtering on the list
-    """
-    selection_loop = True
-
-    while selection_loop:
-
-        # STACKING FAMILY FILTER ================
-        # ========================================
-        stacking_list = list(set([e.stacking for e in all_runs_input]))
-        family_array = stacking_list + ["finished"]
-        family_choice = []
-        print("which stacking types to plot ? ",
-              "\n {}".format(family_array),
-              "\nNo choice = No filtering")
-        while "finished" not in family_choice:
-            try:
-                family_choice.append(
-                    family_array[int(input(
-                        "add stacking to current choice ({}) ? : ".format(
-                            family_choice)))])
-            except Exception as ex:
-                print("family choice terminated {}".format(ex))
-                family_choice.append('finished')
-        if len(family_choice) > 1:
-            restricted_stack_runs = [r for r in all_runs_input
-                                     if r.stacking in family_choice]
-        else:
-            print("No stacking filter")
-            restricted_stack_runs = all_runs_input
-
-        # CONVEX HULL FILTER ==================
-        # ======================================
-
-        try:
-            if len(set([d.x_na for d in restricted_stack_runs])) == 1 and input(
-                    "convex hull on the doo? [Y]") in ["Y", "y"]:
-                restricted_stack_runs = hull.generate_hull_entries(
-                    restricted_stack_runs, remove_extremes=None, coord="dOO_min")
-            elif input("convex hull on x_na ? [Y]") in ["Y", "y"]:
-                restricted_stack_runs = hull.generate_hull_entries(
-                    restricted_stack_runs, remove_extremes=None)
-
-            # 3 converged plots, 4 : all minimas (even off_hull) 5 : On hull
-            # minima
-            list_choice = None
-            choice_dict = {
-                "[a]ll": "all runs that have at least a POSCAR ",
-                "[c]onverged": " all converged vasprun sorted by x_na then energy",
-                "[m]inima": " structures of lowest energy for each x_na ",
-                "[h]ull": " structures on the convex hull"
-            }
-            while list_choice is None:
-                print("Avaliable filtering : "+" // ".join(choice_dict.keys()))
-                list_choice = input("filter structure list ? :")
-                choice_dict = {"a": 1, "c": 3, "m": 4, "h": 5}
-                if list_choice in choice_dict.keys():
-                    sieve_lvl = choice_dict[list_choice]
-                else:
-                    print("\n".join(["{} : {}".format(*kv)
-                                     for kv in choice_dict.items()]))
-                    list_choice = None
-            restricted_hull_runs = [
-                d for d in restricted_stack_runs if d.status >= sieve_lvl]
-        except Exception as ex:
-            print("{} : no hull filtering".format(ex))
-            print(traceback.format_exc())
-            restricted_hull_runs = restricted_stack_runs
-
-        print("number of selected runs : {}".format(len(restricted_hull_runs)))
-
-        restricted_range_runs = restricted_hull_runs
-        try:
-            [x_min, x_max] = [0, 1]
-            if len(set([d.x_na for d in restricted_stack_runs])) > 1 and \
-               input("Change default x_na range [{},{}] ? [Y]".
-                     format(x_min, x_max))[0] in ["Y", "y"]:
-
-                x_min = float(input("Xmin : "))
-                x_max = float(input("Xmax : "))
-                restricted_range_runs = [r for r in restricted_hull_runs
-                                         if (r.x_na >= x_min and r.x_na <= x_max)]
-        except Exception as ex:
-            print("{} : no range filtering".format(ex))
-
-        print(
-            "number of selected runs : {}".format(
-                len(restricted_range_runs)))
-
-        # INDIVIDUAL SELECTION ============
-        # ==================================
-        restricted_idv_runs = []
-        if input("individual run  selection ? [Y]/[n] ") == "Y":
-            for run in restricted_range_runs:
-                if input(
-                        "keep : {} ? Y/y".format(run.name_tag)) in ["Y", "y"]:
-                    restricted_idv_runs.append(run)
-        else:
-            restricted_idv_runs = restricted_range_runs
-
-        print(
-            "nb of structures selected : {0} ".format(
-                len(restricted_idv_runs)))
-
-        if len(restricted_idv_runs) > 0:
-            selection_loop = False
-        else:
-            print("""
-================================
-bad selection, please do it again
-================================
-            """)
-
-    restricted_idv_runs = sort_run(restricted_idv_runs, sort_key=None)
-
-    return(restricted_idv_runs)
-
-
 def initialize(working_dir):
     global PARAM
 
@@ -763,3 +574,30 @@ def get_xna_and_formula(structure, nb_cell=1):
             break
     formula = Composition(compo_dict).formula
     return(x_na, formula)
+
+    # 3 converged plots, 4 : all minimas (even off_hull) 5 : On hull
+    # minima
+    list_choice = None
+    choice_dict = {
+        "[a]ll": "all runs that have at least a POSCAR ",
+        "[c]onverged": " all converged vasprun sorted by x_na then energy",
+        "[m]inima": " structures of lowest energy for each x_na ",
+        "[h]ull": " structures on the convex hull"
+    }
+    try:
+        while list_choice is None:
+            print("Avaliable filtering : "+" // ".join(choice_dict.keys()))
+            list_choice = input("filter structure list ? :")
+            choice_dict = {"a": 1, "c": 3, "m": 4, "h": 5}
+            if list_choice in choice_dict.keys():
+                sieve_lvl = choice_dict[list_choice]
+            else:
+                print("\n".join(["{} : {}".format(*kv)
+                                 for kv in choice_dict.items()]))
+                list_choice = None
+    except Exception as ex:
+        print("{} : no hull filtering".format(ex))
+        print(traceback.format_exc())
+        sieve_lvl = 1
+
+    return sieve_lvl

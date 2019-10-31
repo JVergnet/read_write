@@ -18,6 +18,7 @@ import read_hull as hull
 import readBader as bader
 import readO2 as O2
 import readRun_entries as read
+import filter_runs as filter_runs
 
 print(matplotlib.get_backend())
 print(sys.version)
@@ -36,7 +37,7 @@ def filter_loop(run_list_all, input_graph_type=None, allow_filtering=True):
 
     while continue_filter_loop:
 
-        restricted_runs = read.restrict_run_list(run_list_all) \
+        restricted_runs = filter_runs.restrict_run_list(run_list_all) \
             if allow_filtering else run_list_all
 
         print("nb runs : {}".format(len(restricted_runs)))

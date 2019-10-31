@@ -7,5 +7,6 @@
         "--enable=E265",
         "--disable=W0703"
     ],
-    "python.linting.pylintUseMinimalCheckers": false
+    "python.linting.pylintUseMinimalCheckers": false,
+    "editor.fontSize": 14
 }

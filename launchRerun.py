@@ -23,6 +23,7 @@ import readRun_entries as read
 # import platform
 # import matplotlib
 from drawKpoints import drawkpt
+import filter_runs as filter_runs
 
 # import read_hull as hull
 
@@ -137,7 +138,7 @@ def prompt_rerun_type():
 def main():
 
     # Set the parameters ofthe run
-    setting_dir = platform_id.setting_dir()
+    # setting_dir = platform_id.setting_dir()
 
     try:
         main_dir = sys.argv[1]
@@ -393,17 +394,17 @@ def main():
                 else:
                     kpt_settings = {'reciprocal_density': 300}
 
-                # input_set = MITRelaxSet(
-                #     s, force_gamma=True,
-                #     user_kpoints_settings=kpt_settings,
-                #     user_incar_settings=incar_copy)
-                # print(input_set.incar)
-                # folder_name = input_set.incar['SYSTEM'].replace(
-                #     ' ', '-').replace('.', '_')
-                # full_folder_name = os.path.join(new_parent_dir, folder_name)
-                # input_set.write_input(full_folder_name)
+                    # input_set = MITRelaxSet(
+                    #     s, force_gamma=True,
+                    #     user_kpoints_settings=kpt_settings,
+                    #     user_incar_settings=incar_copy)
+                    # print(input_set.incar)
+                    # folder_name = input_set.incar['SYSTEM'].replace(
+                    #     ' ', '-').replace('.', '_')
+                    # full_folder_name = os.path.join(new_parent_dir, folder_name)
+                    # input_set.write_input(full_folder_name)
 
-                # print(full_folder_name, " static set generated")  #
+                    # print(full_folder_name, " static set generated")  #
 
             elif incar_type == "non_SCF":
                 files_to_copy += ["CHGCAR", "CHG", "linear_KPOINTS"]
@@ -461,20 +462,18 @@ def main():
 
 
 def filtering_runs(rerun_select, rerun_list):
+    selected_runs = rerun_list
     if input("apply further selection on runs ? : Y / n ") == "Y":
-        if rerun_select in ["c"] and input(
-                "convex hull filtering ? : Y / n ") == "Y":
-            rerun_list = read.restrict_run_list(rerun_list)
-            print("selected runs : \n {}".format(
-                [print(rundict.str_id) for rundict in rerun_list]))
+        if rerun_select in ["c"]:
+            filter_runs.sieve_lvl = select_sieve_level()
+            selected_runs = filter_runs.hull_filtering(
+                sieve_lvl, selected_runs)
+            print("number of selected runs : {}".format(
+                len(selected_runs)))
 
         if input("folder by folder ? : Y / n ") == "Y":
-            rerun_list_tmp = rerun_list
-            rerun_list = []
-            for run in rerun_list_tmp:
-                if input("include {} : Y / n ".format(run.str_id)) == "Y":
-                    rerun_list.append(run)
-        print("nb of structures : {0} ".format(len(rerun_list)))
+            selected_runs = idv_filtering(selected_runs)
+            print("nb of structures : {0} ".format(len(rerun_list)))
     return rerun_list
 
 
