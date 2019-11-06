@@ -82,12 +82,12 @@ def generate_IBZKPT(folder):
     print("new NC  incar \n", incar)
     incar.write_file("INCAR")
 
-    jobFileName = os.path.join(settingDir,
-                               "job_scripts",
-                               "vasp_job_single_nc")
+    job_file_name = os.path.join(settingDir,
+                                 "job_scripts",
+                                 "vasp_job_single_nc")
     name = "NC_{}".format(abs(hash(folder)))
     job_string = 'sbatch -J {} --workdir {}  {}'.format(
-        name, folder, jobFileName)
+        name, folder, job_file_name)
     print(job_string)
     subprocess.call([job_string], shell=True)
 
@@ -109,10 +109,10 @@ def generate_IBZKPT(folder):
 
     if os.path.exists("IBZKPT"):
         print("IBZKPT sucessfully generated")
-        return(True)
-    else:
-        print("NO IBZKPT in this folder !! ")
-        return(False)
+        return True
+
+    print("NO IBZKPT in this folder !! ")
+    return False
 
 
 def launch_COOP(folder, rerun=False):
@@ -142,12 +142,12 @@ def launch_COOP(folder, rerun=False):
 
     incar.write_file("INCAR")
 
-    jobFileName = os.path.join(settingDir,
-                               "job_scripts",
-                               "vasp_job_single")
+    job_file_name = os.path.join(settingDir,
+                                 "job_scripts",
+                                 "vasp_job_single")
     name = "COOP_{}".format(abs(hash(folder)))
     job_string = 'sbatch -J {} --workdir {}  {}'.format(
-        name, folder, jobFileName)
+        name, folder, job_file_name)
     print(job_string)
     subprocess.call([job_string], shell=True)
 
@@ -196,8 +196,8 @@ def make_lobsterin(folder, bond="O_O"):
     comment["includeorbitals"] = "\n! Then, specify the types of valence orbitals:"
     s["includeorbitals"] = ["s p d"]
 
-    comment["basisfunctions"] = "\n! You can also specify the basis functions per element manually, e.g. :"
-    s["basisfunctions"] = ["O 2s 2p"]
+    # comment["basisfunctions"] = "\n! You can also specify the basis functions per element manually, e.g. :"
+    # s["basisfunctions"] = ["O 2s 2p"]
     # "Ir 7s 6d" ! Sr sv potential
     # "O 2s 2p"
     if "cohpbetween" in lobster_param:
@@ -210,6 +210,8 @@ def make_lobsterin(folder, bond="O_O"):
             atom_pair_list = cluster.get_MO_pairs(
                 Structure.from_file("{}/POSCAR".format(folder)),
                 metal_str="Mn")
+        elif bond == "specific_pair":
+            atom_pair_list = [[47, 75]]
         print(atom_pair_list)
         s["cohpbetween"] = [
             "atom{} atom{}".format(
@@ -226,8 +228,8 @@ def make_lobsterin(folder, bond="O_O"):
 ! all pairs in a given distance range (in Angstrom, not in atomic units) :"
     if "cohpGenerator" in lobster_param:
         print(comment["cohpGenerator"])
-        min_dist = eval(input("min dist : "))
-        max_dist = eval(input("max dist : "))
+        min_dist = float(input("min dist : "))
+        max_dist = float(input("max dist : "))
 
         s["cohpGenerator"] = ["from {} to {} ".format(min_dist, max_dist)]
 
@@ -246,7 +248,7 @@ def make_lobsterin(folder, bond="O_O"):
 
 
 def COOP_from_folder(mainDir, bond="O_O"):
-    COOP_folders = []
+    # COOP_folders = []
     complete_coop_list = []
     subDirList, fileSystem = read.get_job_list(mainDir)
     for d in subDirList:
@@ -376,7 +378,6 @@ def get_COOP_from_folder(folder, bond="O_O"):
     os.chdir(folders[0])
     complete_coop = CompleteCohp.from_file("LOBSTER", are_coops=True)
     print("cohp sucessfully read from {}".format(folders[0]))
-    print("    /\/\/\      ")
     for key, bond_dict in complete_coop.bonds.items():
         print(key, bond_dict)
     # for key, bond_dict in complete_coop.bonds.items():
@@ -483,13 +484,16 @@ def plot_all_coop_for_all_folder(mainDir):
 def plot_COOP_OO(RunDict_list, sorting="oxidation"):
     override_sorting = True
     try:
-        bond_choice = input("[M]-O // [O]-O // [A]ll: Bond choice ?")
+        bond_choice = input(
+            "[M]-O // [O]-O // [s]pecific pair // [A]ll: Bond choice ?")
         if bond_choice in ["O", "o"]:
             bonds = ["O_O"]  # , "O_O" "M_O"
         elif bond_choice in ["M", "m"]:
             bonds = ["M_O"]
+        elif bond_choice in ["S", "s"]:
+            bonds = ["specific_pair"]
         elif bond_choice in ["A", "a"]:
-            bonds = ["M_O", "O_O"]
+            bonds = ["M_O", "O_O", "specific_pair"]
     except Exception:
         print('bond = M-O')
         bonds = ["M_O"]
@@ -503,7 +507,7 @@ def plot_COOP_OO(RunDict_list, sorting="oxidation"):
     plot_dos = True
     dos_ax = 1 if plot_dos else 0
 
-    Emin = -3
+    Emin = -10
     Emax = 3
 
 
@@ -742,12 +746,12 @@ def plot_coop(ax, COOP, Emin, Emax,
 
 if __name__ == '__main__':
 
-    folder = os.getcwd()
+    current_folder = os.getcwd()
 
     platform_id.first_check_cluster()
 
-    print("CWD = {}".format(folder))
+    print("CWD = {}".format(current_folder))
     if input("[R]ead or [W]rite COOP computation ?") == "R":
-        plot_COOP_OO(folder)
+        plot_COOP_OO(current_folder)
     elif input("[W]rite COOP ?") == "W":
-        prepare_COOP(folder)
+        prepare_COOP(current_folder)

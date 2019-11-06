@@ -15,7 +15,7 @@ from pymatgen.io.vasp.inputs import Kpoints
 from pymatgen.io.vasp.sets import MITRelaxSet  # , MPNonSCFSet  # ,MPStaticSet,
 
 import launchDisordered as launch
-import platform_id
+# import platform_id
 import readRun_entries as read
 # from pymatgen.io.vasp.outputs import Vasprun
 # from pymatgen.io.vasp.inputs import Incar
@@ -115,7 +115,8 @@ def prompt_rerun_type():
                           'd': 'DOS',
                           'n': 'non_SCF',
                           'f': 'fukui',
-                          'p': 'poscar_only'}
+                          'o': 'poscar_only',
+                          'p': "parcharg"}
 
         elif rerun_type == "relaxation":
             incar_dict = {'l': 'less_precise ',
@@ -180,7 +181,7 @@ def main():
 
     if len(rerun_list) == 0:
         print("no valid run")
-        return(0)
+        return 0
 
     print("selected runs : \n {}".format(
         [print(rundict.str_id) for rundict in rerun_list]))
@@ -206,10 +207,11 @@ def main():
             print(dirname)
         except Exception:
             print("error, default dirname to {}".format(dirname))
-        parcharg = True if input("parcharg?") == "Y" else False
 
     if file_system in ["p", "s"]:
         dirname_path = read.get_file_name(main_dir, dirname)
+    elif file_system in ["j"]:
+        dirname_path = rerun_list[0].job_folder
 
     for rundict in rerun_list:
 
@@ -217,59 +219,20 @@ def main():
         job = launch.Job.from_rundict(rundict)
         # s = job.structure
 
-        if file_system == "j":
-            rerun_dir = read.get_file_name(rundict.job_folder, dirname)
-            job.explicit_jobpath = True
-        else:
-            job.explicit_jobpath = False
-            if file_system == "p":
-                rerun_dir = dirname_path
-            if file_system == "s":
-                print(rundict.stacking)
-                rerun_dir = os.path.join(dirname_path, rundict.stacking)
-        job.oldFolder = job.job_folder
-        job.set_job_folder(rerun_dir)
-
+        files_to_copy = []
+        incar = {}
         if rerun_type == "identical":
+            files_to_copy += ['INCAR', 'POTCAR', 'KPOINTS', 'CONTCAR']
             # quick and dirty copy
-            os.makedirs(job.job_folder, exist_ok=True)
-            for f_name in ['CONTCAR', 'POSCAR']:
-                try:
-                    shutil.copy2('{0.oldFolder}/{1}'.format(job, f_name),
-                                 '{0.job_folder}/POSCAR'.format(job))
-                    break
-                except Exception as ex:
-                    pass
-
-            for f_name in ['INCAR', 'POTCAR', 'KPOINTS']:
-                try:
-                    shutil.copy2('{0.oldFolder}/{1}'.format(job, f_name),
-                                 '{0.job_folder}/{1}'.format(job, f_name))
-                except Exception as ex:
-                    print(ex)
             print("identical set generated")
 
-            continue
+        if rerun_type == "relaxation":
+            if incar_type == "poscar_only":
+                pass
+            elif incar_type == "rebuild_from_scratch":
+                pass
 
-        incar = {}
-        files_to_copy = []
-
-        if rerun_type == "poscar_only":
-            pass
-            # incar_default = launch.default_incar()
-            # incar_default["SYSTEM"] = runDict["job_name"]
-            # s = runDict['structure']
-            # s.remove_site_property("selective_dynamics")
-            # inputSet = MITRelaxSet(s,
-            #                        user_kpoints_settings={
-            #                            'reciprocal_density': 100},
-            #                        force_gamma=True,
-            #                        user_incar_settings=incar_default)
-            # inputSet.write_input(folder)
-
-        elif rerun_type == "relaxation":
-
-            if incar_type == "less_precise":
+            elif incar_type == "less_precise":
                 incar.update(less_precise_incar(job.structure))
                 print(" less precise set generated")
 
@@ -312,7 +275,7 @@ def main():
             # incar['LDAUU'] = {'Ti': 3.9}
             # print("NEW INCAR========", incar_copy)
             # incar["LELF"] = "False"
-            # incar["NELM"] = 60
+
             # incar["EMAX"] = 8
             # incar["EMIN"] = -5
             # incar["NEDOS"] = 5001
@@ -322,8 +285,7 @@ def main():
             # incar["NCORE"] = 8
             # incar["KPAR"] = 2
             # incar["NUPDOWN"] = 0
-            # incar["NELM"] = 60
-            # incar['PREC'] = "Accurate"
+
             # incar['ICHARG'] = 0
 
             # HSE06
@@ -333,38 +295,28 @@ def main():
 
             # PARCHG
             # incar["LWAVE"] = "True"
+
+                # "ISMEAR": 0,
+                # 'EDIFF': 1E-02,
+                # "LCHARG": "True",
+                # "LAECHG": "True",
+                # "NELMDL": -10,
+                # "PREC": "Accurate",
+                # "ADDGRID": "True",
+                # "IBRION": 1,
+                # "NELM": 150,
+                # "SIGMA": 0.1
             incar.update({
-                "ISMEAR": 0,
-                'EDIFF': 1E-02,
-                "LCHARG": "True",
-                "LAECHG": "True",
-                "NELMDL": -10,
-                "PREC": "Accurate",
-                "ADDGRID": "True",
-                "IBRION": 1,
-                "NELM": 150,
-                "SIGMA": 0.1
+                "ALGO": "Normal"
             })
             kpt = Kpoints.gamma_automatic(kpts=(1, 1, 1), shift=(0, 0, 0))
             job.user_kpoint = kpt
             print("yolo!!")
 
-            if parcharg:
-                efermi = rundict.data['efermi']
-                print(efermi)
-                incar["LPARD"] = "True"
-                below_fermi = float(input("Emin (Efermi=0) ?"))
-                above_fermi = float(input("Emax (Efermi=0) ?"))
-                incar["EINT"] = "{} {}".format(efermi+below_fermi,
-                                               efermi+above_fermi)
-                # incar["EINT"] = "{} {}".format(efermi, efermi+0.5)
-
-                print("MODIFIED PARAMETERS ========", incar)
-                # settingCopy['LDAUU']={'Mn':U}
-                # s.replace_species({Element("Cu"): Element("Ni")})
-                #     job.write_vasp_input(
-
-                files_to_copy.append("WAVECAR")
+            print("MODIFIED PARAMETERS ========", incar)
+            # settingCopy['LDAUU']={'Mn':U}
+            # s.replace_species({Element("Cu"): Element("Ni")})
+            #     job.write_vasp_input(
 
             # if fileSystem == "j":
             #     rerunDir = read.get_file_name(runDict.job_folder, dirname)
@@ -384,6 +336,17 @@ def main():
                 print("fukui correction added :",
                       "\nNELECT read {} ==> wrote {}".format(
                           input_set.nelect, input_set.nelect + fukui_nelec))
+            elif incar_type == "parcharg":
+                efermi = rundict.data['efermi']
+                print(efermi)
+                incar["LPARD"] = "True"
+                below_fermi = float(input("Emin (Efermi=0) ?"))
+                above_fermi = float(input("Emax (Efermi=0) ?"))
+                incar["EINT"] = "{} {}".format(efermi+below_fermi,
+                                               efermi+above_fermi)
+                dirname += "_{}_{}".format(below_fermi,
+                                           above_fermi)
+                files_to_copy.append("WAVECAR")
 
             elif incar_type in ["static", "DOS"]:
                 incar.update(single_point_incar())
@@ -397,10 +360,7 @@ def main():
                 else:
                     kpt_settings = {'reciprocal_density': 300}
 
-
-FR
-
-                job.user_kpoint = kpt
+                job.user_kpoint = kpt_settings
                 # input_set = MITRelaxSet(
                 #     s, force_gamma=True,
                 #     user_kpoints_settings=kpt_settings,
@@ -427,7 +387,7 @@ FR
                               })
                 for k in ["NELMDL", "MAGMOM"]:
                     job.user_incar.pop(k, None)
-                job.set_job_folder(rerun_dir)
+                # job.set_job_folder(rerun_dir)
                 kpt = drawkpt(rundict.structure)
                 kpt.write_file(os.path.join(
                     job.oldFolder, "linear_KPOINTS"))
@@ -438,6 +398,19 @@ FR
                 #     user_incar_settings=incar)
                 # print(folder, " non_SCF set generated")
                 # inputSet.write_input(folder)
+
+        job.oldFolder = job.job_folder
+        if file_system == "j":
+            job.explicit_jobpath = True
+            job.set_job_folder(read.get_file_name(dirname_path, dirname))
+        else:
+            job.explicit_jobpath = False
+            if file_system == "p":
+                job.set_job_folder(dirname_path)
+            if file_system == "s":
+                print(rundict.stacking)
+                job.set_job_folder(os.path.join(
+                    dirname_path, rundict.stacking))
 
         if incar.get('EDIFF', None) is not None:
             incar['EDIFF'] = '{:0.1E}'.format(incar['EDIFF'])
@@ -451,7 +424,11 @@ FR
 
         job.structure.perturb(perturb)
         print("explicit jobpath", job.explicit_jobpath)
-        job.write_data_input(rerun_dir)
+
+        if rerun_type == "identical":
+            os.mkdir(job.job_folder)
+        else:
+            job.write_data_input(job.job_folder)
 
         for f_name in files_to_copy:
             try:

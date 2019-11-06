@@ -66,6 +66,12 @@ def sort_run(rundict_list, sort_key="nelect"):
         def energy_per_fu(self, run):
             return run.energy_per_fu
 
+        def x_na(self, run):
+            return run.x_na
+
+        def d_oo(self, run):
+            return run.d_oo
+
     print("sorting by {}".format(sort_key))
     sort = Sort()
     sorted_run_list = sorted(rundict_list,
