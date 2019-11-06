@@ -80,15 +80,17 @@ class Job(MPRelaxSet):
         self.job_name = self.job_name.replace(' ', '-').replace('.', '')
         return self.job_name
 
-    def set_job_folder(self, parent_path):
+    def set_job_folder(self, parent_path, explicit_jobpath=None):
+        if explicit_jobpath is not None:
+            self.explicit_jobpath = explicit_jobpath
         self.set_job_name()
         self.job_folder = parent_path if self.explicit_jobpath \
             else os.path.join(parent_path, self.job_name)
         return self.job_folder
 
-    def write_data_input(self, parent_path, explicit_jobpath=None):
-        if explicit_jobpath is not None:
-            self.explicit_jobpath = explicit_jobpath
+    def write_data_input(self, parent_path=None, explicit_jobpath=None):
+        if parent_path is not None:
+            self.set_job_folder(parent_path, explicit_jobpath)
         print(self.kwargs)
         # self.kwargs['user_kpoints_settings'] = self.user_kpoint
         self.user_incar['SYSTEM'] = self.job_name
@@ -105,7 +107,6 @@ class Job(MPRelaxSet):
                          potcar_functional='PBE_54',
                          )
         # print("POTCAR FUNCTIONNAL :", self.potcar_functional)
-        self.set_job_folder(parent_path)
         self.write_input(self.job_folder)
 
         if len(self.user_param) > 0:
@@ -132,7 +133,7 @@ class Job(MPRelaxSet):
                    job_folder=self.job_folder))
 
     @classmethod
-    def from_rundict(cls, rundict,  new_folder=None):
+    def from_rundict(cls, rundict, new_folder=None):
         job = Job(rundict.structure, rundict.str_id,
                   user_param=dict(rundict.parameters.get('custom', {})),
                   user_incar=dict(rundict.parameters['incar']),

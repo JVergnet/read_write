@@ -37,7 +37,6 @@ def less_precise_incar(struct):
                 PREC='Normal',
                 EDIFFG=-1E-01,
                 EDIFF=1E-04 * struct.num_sites,
-                NSW=100,
                 # far from minimum : conjugate gradient algorithm (2)
                 IBRION=2,
                 LCHARG="True",
@@ -53,7 +52,6 @@ def more_precise_incar(struct):
                 PREC='Accurate',
                 EDIFFG=-1E-02,
                 EDIFF=1E-06 * struct.num_sites,
-                NSW=100,
                 # Close to the local minimum : RMM-DIIS (1)
                 IBRION=1,
                 SIGMA=0.01,
@@ -137,10 +135,7 @@ def prompt_rerun_type():
 
 
 def main():
-
-    # Set the parameters ofthe run
-    # setting_dir = platform_id.setting_dir()
-
+    """Set the parameters ofthe run"""
     try:
         main_dir = sys.argv[1]
     except IndexError:
@@ -196,8 +191,9 @@ def main():
     print("current dirname ={}".format(dirname))
 
     if incar_type == "fukui":
-        fukui_nelec = 1 if (input("[+]1 or [-]1 elec ? ") == "+") else -1
-        print("fukui n electrons : {}".format(fukui_nelec))
+        fukui_nelec = float(
+            input("nb elec for the fukui (>0: added, <0 : removed) ? "))
+        print("fukui electrons : {}".format(fukui_nelec))
 
     elif rerun_type == "custom":
         try:
@@ -259,11 +255,6 @@ def main():
             # incar["ISMEAR"] = 0
             # incar["LELF"] = "False"
             # incar["ISYM"] = 0
-            # os.chdir(folder)
-            # incar.write_file("INCAR")
-            # settingCopy=dict(incar_setting)
-            # incar.pop("MAGMOM",None)
-            # settingCopy['SYSTEM']=jobName
             # incar_copy['LDAUU']={'O':2, 'Mn' : 3.9}
             # incar_copy['LDAUL']={'O':1, 'Mn' : 2}
             # incar_copy['SYSTEM'] = incar_copy['SYSTEM'].replace("cu", "ni")
@@ -273,8 +264,6 @@ def main():
             # incar_copy["NELMIN"] = 1
             # incar_copy['EDIFF'] = 1E-04
             # incar['LDAUU'] = {'Ti': 3.9}
-            # print("NEW INCAR========", incar_copy)
-            # incar["LELF"] = "False"
 
             # incar["EMAX"] = 8
             # incar["EMIN"] = -5
@@ -307,24 +296,15 @@ def main():
                 # "NELM": 150,
                 # "SIGMA": 0.1
             incar.update({
-                "ALGO": "Normal"
+                "ALGO": "Normal",
+                "EDIFF": 0.001,
+                'ISMEAR': 0
             })
             kpt = Kpoints.gamma_automatic(kpts=(1, 1, 1), shift=(0, 0, 0))
             job.user_kpoint = kpt
             print("yolo!!")
 
             print("MODIFIED PARAMETERS ========", incar)
-            # settingCopy['LDAUU']={'Mn':U}
-            # s.replace_species({Element("Cu"): Element("Ni")})
-            #     job.write_vasp_input(
-
-            # if fileSystem == "j":
-            #     rerunDir = read.get_file_name(runDict.job_folder, dirname)
-            # else:
-            #     rerunDir = read.get_file_name(mainDir, dirname)
-            #     if fileSystem == "s":
-            #         rerunDir = os.path.join(rerunDir, runDict.stacking)
-            # job.set_job_folder(rerunDir)
             print("{} set generated".format(dirname))
 
         elif rerun_type == "single_point":
@@ -361,17 +341,6 @@ def main():
                     kpt_settings = {'reciprocal_density': 300}
 
                 job.user_kpoint = kpt_settings
-                # input_set = MITRelaxSet(
-                #     s, force_gamma=True,
-                #     user_kpoints_settings=kpt_settings,
-                #     user_incar_settings=incar_copy)
-                # print(input_set.incar)
-                # folder_name = input_set.incar['SYSTEM'].replace(
-                #     ' ', '-').replace('.', '_')
-                # full_folder_name = os.path.join(new_parent_dir, folder_name)
-                # input_set.write_input(full_folder_name)
-
-                # print(full_folder_name, " static set generated")  #
 
             elif incar_type == "non_SCF":
                 files_to_copy += ["CHGCAR", "CHG", "linear_KPOINTS"]
@@ -391,26 +360,20 @@ def main():
                 kpt = drawkpt(rundict.structure)
                 kpt.write_file(os.path.join(
                     job.oldFolder, "linear_KPOINTS"))
-                # inputSet = MPNonSCFSet.from_prev_calc(
-                #     prev_folder,
-                #     reciprocal_density=100,
-                #     kpoints_line_density=20,
-                #     user_incar_settings=incar)
-                # print(folder, " non_SCF set generated")
-                # inputSet.write_input(folder)
 
         job.oldFolder = job.job_folder
         if file_system == "j":
-            job.explicit_jobpath = True
-            job.set_job_folder(read.get_file_name(dirname_path, dirname))
+            job.set_job_folder(read.get_file_name(dirname_path, dirname),
+                               explicit_jobpath=True)
         else:
-            job.explicit_jobpath = False
             if file_system == "p":
-                job.set_job_folder(dirname_path)
+                job.set_job_folder(dirname_path,
+                                   explicit_jobpath=False)
             if file_system == "s":
-                print(rundict.stacking)
-                job.set_job_folder(os.path.join(
-                    dirname_path, rundict.stacking))
+                # print(rundict.stacking)
+                job.set_job_folder(os.path.join(dirname_path,
+                                                rundict.stacking),
+                                   explicit_jobpath=False)
 
         if incar.get('EDIFF', None) is not None:
             incar['EDIFF'] = '{:0.1E}'.format(incar['EDIFF'])
@@ -428,7 +391,7 @@ def main():
         if rerun_type == "identical":
             os.mkdir(job.job_folder)
         else:
-            job.write_data_input(job.job_folder)
+            job.write_data_input()
 
         for f_name in files_to_copy:
             try:
