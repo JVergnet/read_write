@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # launchDisordered.py
-# wait for the job in previousPath to pint a OK file before going
 # Creates VASP imput files for vasp in the folder projectName/jobFformula
 
 
@@ -450,7 +449,7 @@ def main():
 
     elif input("Browse existing runs in subfolder ? Y/N") == "Y":
         rundicts = read.collect_valid_runs(
-            cif_folder, vaspRun_parsing_lvl=0)
+            cif_folder, vasprun_parsing_lvl=0)
         pristine_job_list = [Job(r.structure, r.str_id,
                                  user_incar=dict(r.parameters["incar"]))
                              for r in rundicts]

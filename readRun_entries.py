@@ -35,28 +35,26 @@ PARAM['verbose'] = 0
 # =========================================
 
 
-def get_job_list(main_folder, file_system_choice=None):
-    print("\n {} \n ".format(main_folder))
+def get_job_list(init_dir, file_system_choice=None):
+    print("\n {} \n ".format(init_dir))
     if file_system_choice is None:
         file_system_choice = input(
             "[j]ob / [p]roject / [s]uper_project ?  :  ")
 
     if file_system_choice[0] == "p":
         # file_system = "p"
-        d = main_folder
         subdir_list = [
-            os.path.join(d, o)
-            for o in os.listdir(d)
-            if os.path.isdir(os.path.join(d, o))]
+            os.path.join(init_dir, o)
+            for o in os.listdir(init_dir)
+            if os.path.isdir(os.path.join(init_dir, o))]
 
     elif file_system_choice[0] == "s":
         # file_system = "s"
-        d = main_folder
         subdir_list = []
         for folder in [
-                os.path.join(d, o)
-                for o in os.listdir(d)
-                if os.path.isdir(os.path.join(d, o))]:
+                os.path.join(init_dir, o)
+                for o in os.listdir(init_dir)
+                if os.path.isdir(os.path.join(init_dir, o))]:
             subdir_list += [
                 os.path.join(folder, o)
                 for o in os.listdir(folder)
@@ -64,7 +62,7 @@ def get_job_list(main_folder, file_system_choice=None):
 
     else:
         # file_system = "j"
-        subdir_list = [main_folder]
+        subdir_list = [init_dir]
     return(subdir_list, file_system_choice)
 
 
@@ -96,24 +94,23 @@ class Rundict(ComputedStructureEntry):
                                             parameters=c_e.parameters,
                                             data=c_e.data,
                                             entry_id=None)
-        # define all attributes
-        self.nb_cell = 1
-        self.x_na = 0
-        self.volume = None
-        self.formula = None
-        # self.name_tag = None
-        self.spacegroup = None
-        self.equivSiteList = None
-        self.dOO_min = None
-        self.dOO_min_indices = None
-        # self.mag = None
-        self.OO_pairs = None
-        self.MMOO_quadruplets = None
-        self.bader_done = False
-        # self.structure_data = self.structure
+            # define all attributes
+            self.nb_cell = 1
+            self.x_na = 0
+            self.volume = None
+            self.formula = None
+            # self.name_tag = None
+            self.spacegroup = None
+            self.equivSiteList = None
+            self.dOO_min = None
+            self.dOO_min_indices = None
+            # self.mag = None
+            self.OO_pairs = None
+            self.MMOO_quadruplets = None
+            self.bader_done = False
+            # self.structure_data = self.structure
 
         self.generate_tags()
-    # if c_e is not None:
 
     @property
     def nelect(self):
@@ -137,7 +134,7 @@ class Rundict(ComputedStructureEntry):
     def generate_tags(self):
         " progressively generates tags & attributes depending on the convergence "
         if self.status == 0:
-            return("{} Not a job folder".format(self.job_folder))
+            return "{} Not a job folder".format(self.job_folder)
         if self.status > 0:  # pre-run : just the structure
             self.get_structure_tag()
             self.get_nametag()
@@ -147,7 +144,7 @@ class Rundict(ComputedStructureEntry):
         if self.status >= 3:  # converged run : DOS & co.
             print(self.name_tag, self.data["efermi"])
             # self.complete_dos = self.data["complete_dos"]
-        return("tags generated")
+        return "tags generated"
 
     def get_nametag(self):
         " nameTag : get name of the current structure in a string nameTag"
@@ -187,18 +184,18 @@ class Rundict(ComputedStructureEntry):
             print("could no define MMOO clusters because {}".format(ex))
 
     def as_dict(self):
-        d = super().as_dict()
-        d["@module"] = self.__class__.__module__
-        d["@class"] = self.__class__.__name__
-        d.update(dict(status=self.status,
-                      status_string=self.status_string,
-                      job_folder=self.job_folder,
-                      stacking=self.stacking,
-                      id=self.str_id,
-                      # structure_data=self.structure_data.as_dict()
-                      # mag=self.mag
-                      ))
-        return d
+        dict_of_run = super().as_dict()
+        dict_of_run["@module"] = self.__class__.__module__
+        dict_of_run["@class"] = self.__class__.__name__
+        dict_of_run.update(dict(status=self.status,
+                                status_string=self.status_string,
+                                job_folder=self.job_folder,
+                                stacking=self.stacking,
+                                id=self.str_id,
+                                # structure_data=self.structure_data.as_dict()
+                                # mag=self.mag
+                                ))
+        return dict_of_run
 
     # def from_dict(cls, d):
     #     dec = MontyDecoder()  # /!\ not implemented !!
@@ -217,7 +214,7 @@ class Rundict(ComputedStructureEntry):
         c_e = ComputedStructureEntry(structure=structure,
                                      energy=100000000,
                                      entry_id=entry_id)
-        return(cls(c_e, status, job_folder))
+        return cls(c_e, status, job_folder)
 
 
 def if_file_exist_gz(folder, non_comp_file):
@@ -235,10 +232,10 @@ def if_file_exist_gz(folder, non_comp_file):
     return(os.path.exists(os.path.join(folder, non_comp_file)))
 
 
-def collect_single_folder(job_folder, drone, vaspRun_parsing_lvl=1):
+def collect_single_folder(job_folder, drone, vasprun_parsing_lvl=1):
     """
     Reading and parsing of VASP files in the job_folder folder
-    vaspRun_parsing_lvl > 0.5 : parse vasprun, else only parse vasp inputs
+    vasprun_parsing_lvl > 0.5 : parse vasprun, else only parse vasp inputs
     returns a Rundict instance
     """
     # status :
@@ -253,7 +250,7 @@ def collect_single_folder(job_folder, drone, vaspRun_parsing_lvl=1):
         # warnings.filterwarnings('once')
         if PARAM['verbose'] == 0:
             warnings.simplefilter("ignore")
-        if vaspRun_parsing_lvl > 0.5:
+        if vasprun_parsing_lvl > 0.5:
             if if_file_exist_gz(job_folder, "vasprun.xml"):
                 # try  unzip the vasprun
                 c_e = drone.assimilate(job_folder)
@@ -311,7 +308,7 @@ def collect_single_folder(job_folder, drone, vaspRun_parsing_lvl=1):
 
 
 def collect_valid_runs(mainFolder, checkDiff=False,
-                       vaspRun_parsing_lvl=1, file_system_choice=None):
+                       vasprun_parsing_lvl=1, file_system_choice=None):
     """
     input : mainFolder ,{ param : value}
     output : [ {vaspRun : v , folder : F } ]
@@ -328,7 +325,7 @@ def collect_valid_runs(mainFolder, checkDiff=False,
     sub_dir_list, file_system_choice = get_job_list(
         mainFolder, file_system_choice=file_system_choice)
 
-    if vaspRun_parsing_lvl is None:
+    if vasprun_parsing_lvl is None:
         try:
             parse_choice = input(
                 "check vasprun level ?\n" +
@@ -338,16 +335,16 @@ def collect_valid_runs(mainFolder, checkDiff=False,
                     "[o]szicar parsing (energy & structure only)",
                     "[n]o parsing"]))
             if parse_choice[0] in ["f", "F"]:  # [f]ull parsing
-                vaspRun_parsing_lvl = 1
+                vasprun_parsing_lvl = 1
             elif parse_choice[0] in ["m", "M"]:  # [m]inimal parsing
-                vaspRun_parsing_lvl = 0.7
+                vasprun_parsing_lvl = 0.7
             elif parse_choice[0] in ["o", "O"]:  # [m]inimal parsing
-                vaspRun_parsing_lvl = 0.4
+                vasprun_parsing_lvl = 0.4
             elif parse_choice[0] in ["n", "N"]:  # [n]o parsing
-                vaspRun_parsing_lvl = 0
+                vasprun_parsing_lvl = 0
         except Exception as ex:
             print("Exception : {}\n default to full parsing".format(ex))
-            vaspRun_parsing_lvl = 1
+            vasprun_parsing_lvl = 1
 
     # print(str(subDirList)+"\n\n")
     drone = VaspToComputedEntryDrone(
@@ -355,12 +352,12 @@ def collect_valid_runs(mainFolder, checkDiff=False,
         parameters=["incar"],
         data=['efermi', "complete_dos", "tdos", "converged"])
 
-    with Pool(processes=cpu_count()) as p:
-        tmp_list = p.starmap(
+    with Pool(processes=cpu_count()) as parallel_runs:
+        tmp_list = parallel_runs.starmap(
             collect_single_folder, [
-                (d, drone, vaspRun_parsing_lvl) for d in sub_dir_list])
-        p.close()
-        p.join()
+                (run, drone, vasprun_parsing_lvl) for run in sub_dir_list])
+        parallel_runs.close()
+        parallel_runs.join()
 
     tmp_list.sort(key=lambda x: x.job_folder)
     # for d in tmp_list:
@@ -370,22 +367,23 @@ def collect_valid_runs(mainFolder, checkDiff=False,
     converged_runs = []
 
     if checkDiff:
-        for d in [d for d in tmp_list if d.status > 0]:
+        for run in [run for run in tmp_list if run.status > 0]:
             new_struct = True
             for existing_run in converged_runs:
-                if d.structure.matches(
+                if run.structure.matches(
                         existing_run.structure):
                     print(
                         "Structure : {0} match with previous one :  {1}".format(
-                            d.parameters['incar'].get('SYSTEM', "no_name"),
+                            run.parameters['incar'].get(
+                                'SYSTEM', "no_name"),
                             existing_run.parameters['incar'].get(
                                 'SYSTEM', "no_name")))
                     new_struct = False
-            if new_struct and d.status > 0:
-                converged_runs.append(d)
+            if new_struct and run.status > 0:
+                converged_runs.append(run)
 
     else:
-        valid_runs = [d for d in tmp_list if d.status > 0]
+        valid_runs = [run for run in tmp_list if run.status > 0]
 
     # os.chdir(valid_runs)
     print("\nnb of valid runs : {0}".format(len(valid_runs)))
@@ -448,7 +446,7 @@ def get_equiv_site_list(structure):
             'multiplicity': len(sym_list[k]),
             'charge': -1,
             'magnetization': -1})
-    return(equivalent_sites)
+    return equivalent_sites
 
 
 def get_file_name(folder, name, ext=""):
@@ -463,7 +461,7 @@ def get_file_name(folder, name, ext=""):
         k += 1
         file_name = basis + str(k)
         print(file_name)
-    return(file_name)
+    return file_name
 
 
 def initialize(working_dir):
@@ -486,7 +484,7 @@ def initialize(working_dir):
     logging.info('Started')
 
     parameters = PARAM
-    return(parameters)
+    return parameters
 
 
 def get_nb_cell(structure):

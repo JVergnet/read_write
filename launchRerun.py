@@ -157,7 +157,7 @@ def main():
 
     # Create a list of all the valid runs in the selected folders
     run_list = read.collect_valid_runs(main_dir, checkDiff=False,
-                                       vaspRun_parsing_lvl=check_vasprun,
+                                       vasprun_parsing_lvl=check_vasprun,
                                        file_system_choice=file_system)
 
     converged_jobs = [d for d in run_list if d.status == 3]

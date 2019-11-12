@@ -137,9 +137,9 @@ def generate_stacking_dict(sorted_entries, chem_env_done):
         if distortion_mesh is None or input(
                 "force distortion mesh reloading ? Y / n ") == "Y":
             distortion_mesh = read.collect_valid_runs(disto_mesh_folder,
-                                                      vaspRun_parsing_lvl=0.5,
+                                                      vasprun_parsing_lvl=0.5,
                                                       file_system_choice="p")
-            distortion_mesh = read.generate_tags(distortion_mesh, force=True)
+            # distortion_mesh = read.generate_tags(distortion_mesh, force=True)
             distortion_mesh = hull.generate_hull_entries(distortion_mesh)
             if do_chem_env:
                 distortion_mesh = bailar.get_chem_env_tags(distortion_mesh)
@@ -189,7 +189,7 @@ def plot_energy_surface_graphs(runList, chem_env_done):
                 finish = False
                 # we do a loop to redo the plot without loosing all the mesh data that was loaded
                 # allo both to debug and redraw a lot faster
-                while finish == False:
+                while not finish:
                     importlib.reload(PES_complex_plot)
                     try:
                         PES_complex_plot.plot_3d_angle_energy_from_struct_list(
