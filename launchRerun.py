@@ -287,8 +287,7 @@ def main():
 
                 # "ISMEAR": 0,
                 # 'EDIFF': 1E-02,
-                # "LCHARG": "True",
-                # "LAECHG": "True",
+
                 # "NELMDL": -10,
                 # "PREC": "Accurate",
                 # "ADDGRID": "True",
@@ -298,7 +297,10 @@ def main():
             incar.update({
                 "ALGO": "Normal",
                 "EDIFF": 0.001,
-                'ISMEAR': 0
+                'ISMEAR': 0,
+                "SIGMA": 0.1,
+                "LCHARG": "True",
+                "LAECHG": "True"
             })
             kpt = Kpoints.gamma_automatic(kpts=(1, 1, 1), shift=(0, 0, 0))
             job.user_kpoint = kpt

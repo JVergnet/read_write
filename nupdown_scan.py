@@ -215,7 +215,7 @@ def plot_nelect_heatmap(input_rundict_list):
     """
     attr_x = "nelect"
     attr_y = "doo"
-    landscapes_to_draw = [("O", "charge", "mean", "Reds"),
+    landscapes_to_draw = [("S", "charge", "mean", "Reds"),
                           ("H", "charge", "mean", "Blues")]
 
     rundict_list = ([d for d in input_rundict_list if (
@@ -310,13 +310,16 @@ def plot_charge_landscape(rundict_list, fig, axe,
                     "min": "Minimum",
                     "max": "Maximum",
                     "mean": "Average"}
+    try:
+        x_y_c = build_x_y_c(rundict_list, attr_x, attr_y,
+                            specie=specie, attr_z=attr_z,
+                            attr_z_func=attr_z_func)
+        grid_x, grid_y, interp_c = interp_xye(x_y_c)
+    except KeyError:
+        print("key not found")
+        return (False)
+        # interpolation of the grid of computed points
 
-    x_y_c = build_x_y_c(rundict_list, attr_x, attr_y,
-                        specie=specie, attr_z=attr_z,
-                        attr_z_func=attr_z_func)
-
-    # interpolation of the grid of computed points
-    grid_x, grid_y, interp_c = interp_xye(x_y_c)
     # surface_color = interp_e
     # colorbar_title = "Energy"
 
@@ -355,6 +358,7 @@ def plot_charge_landscape(rundict_list, fig, axe,
         short_2_long[attr_z_func], specie, attr_z)
 
     axe.title.set_text(plot_title)
+    return True
 
 
 # === PLOTLY REQUIRED

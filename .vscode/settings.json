@@ -8,5 +8,6 @@
         "--disable=W0703"
     ],
     "python.linting.pylintUseMinimalCheckers": false,
-    "editor.fontSize": 17
+    "editor.fontSize": 17,
+    "outline.showVariables": false
 }
