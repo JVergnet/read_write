@@ -58,12 +58,12 @@ def plot_all_graphs(rundict_list, nupdown=False, nelect=True):
 def get_mag_tag_list(rundict_list):
 
     vasp_run_poll = []
-    with Pool(processes=cpu_count()) as p:
-        vasp_run_poll = p.map(get_mag_tag_single, rundict_list)
-        p.close()
-        p.join()
+    with Pool(processes=cpu_count()) as parallel_threads:
+        vasp_run_poll = parallel_threads.map(get_mag_tag_single, rundict_list)
+        parallel_threads.close()
+        parallel_threads.join()
 
-    return(vasp_run_poll)
+    return vasp_run_poll
 
 
 def get_mag_tag_single(rundict):
@@ -285,7 +285,8 @@ def plot_energy_landscape(rundict_list, fig, axe, attr_x="nelect", attr_y="doo")
     axe.scatter(x_y_e[:, 0], x_y_e[:, 1], c="black", marker="+",
                 s=30, label="computed structures",
                 alpha=0.3)
-    cbar = fig.colorbar(e_img, ax=axe)
+    # cbar = \
+    fig.colorbar(e_img, ax=axe)
     #  ,  norm=colors.PowerNorm(gamma=1./3.) ) //,
     # axes[-1].imshow(interp_E, extent=(np.amin(x), np.amax(x), np.amin(y), np.amax(y)),
     #                             cmap=cm.jet) #, norm=LogNorm())
@@ -317,7 +318,7 @@ def plot_charge_landscape(rundict_list, fig, axe,
         grid_x, grid_y, interp_c = interp_xye(x_y_c)
     except KeyError:
         print("key not found")
-        return (False)
+        return False
         # interpolation of the grid of computed points
 
     # surface_color = interp_e
@@ -342,7 +343,8 @@ def plot_charge_landscape(rundict_list, fig, axe,
     axe.scatter(x_y_c[:, 0], x_y_c[:, 1], c="black", marker="+",
                 s=30, label="computed structures",
                 alpha=0.3)
-    cbar = fig.colorbar(c_img, ax=axe)
+    # cbar =  \
+    fig.colorbar(c_img, ax=axe)
     #  ,  norm=colors.PowerNorm(gamma=1./3.) ) //,
     # axes[-1].imshow(interp_E, extent=(np.amin(x), np.amax(x), np.amin(y), np.amax(y)),
     #                             cmap=cm.jet) #, norm=LogNorm())
@@ -366,31 +368,32 @@ def plot_mag_surface(rundict_list, colorcode="O_mag"):
 
     if not plotly_available:
         print("plotly could not be imported, \n 3D plots not available")
-        return(False)
+        return False
 
     mag_list = rundict_list
-    for x_na in set([d.x_na for d in mag_list]):
-        struct_list_slice = [d for d in mag_list if d.x_na == x_na]
-        e_min = min([d.energy_per_fu for d in struct_list_slice])
+    for x_na in set([rundict.x_na for rundict in mag_list]):
+        struct_list_slice = [
+            rundict for rundict in mag_list if rundict.x_na == x_na]
+        e_min = min([rundict.energy_per_fu for rundict in struct_list_slice])
         print(
             " x_na ={} :  {} runs, E min = {:.2f} ".format(
                 x_na, len(struct_list_slice), e_min))
-        for d in struct_list_slice:
-            d.e_valley = 1000 * (d.energy_per_fu - e_min)
+        for rundict in struct_list_slice:
+            rundict.e_valley = 1000 * (rundict.energy_per_fu - e_min)
 
-    x_y_e = np.array([[d.x_na, d.mag, d.e_valley]
-                      for d in mag_list if d.status >= 3])
+    x_y_e = np.array([[rundict.x_na, rundict.mag, rundict.e_valley]
+                      for rundict in mag_list if rundict.status >= 3])
 
     # interpolation of the grid of computed points
-    x = np.linspace(min(x_y_e[:, 0]), max(x_y_e[:, 0]), num=80)
-    y = np.linspace(min(x_y_e[:, 1]), max(x_y_e[:, 1]), num=50)
+    x_values = np.linspace(min(x_y_e[:, 0]), max(x_y_e[:, 0]), num=80)
+    y_values = np.linspace(min(x_y_e[:, 1]), max(x_y_e[:, 1]), num=50)
 
-    grid_x, grid_y = np.meshgrid(x, y)
+    grid_x, grid_y = np.meshgrid(x_values, y_values)
 
-    interp_E = griddata(x_y_e[:, 0: 2], x_y_e[:, 2],
+    interp_e = griddata(x_y_e[:, 0: 2], x_y_e[:, 2],
                         (grid_x, grid_y), method='cubic')
 
-    surface_color = interp_E
+    surface_color = interp_e
     colorbar_title = "Energy"
     file_name = 'Sz_landscape_energy.html'
     if colorcode == "O_mag":
@@ -399,8 +402,8 @@ def plot_mag_surface(rundict_list, colorcode="O_mag"):
         value_type = "min"
         value_list = np.zeros(len(mag_list))
         for i, run in enumerate(mag_list):
-            nbSpecie = len(run.structure.indices_from_symbol(specie))
-            if nbSpecie == 0:
+            nb_specie = len(run.structure.indices_from_symbol(specie))
+            if nb_specie == 0:
                 print(" no {} in the structure !!".format(specie))
                 value_list[i] = np.nan
                 break
@@ -411,17 +414,17 @@ def plot_mag_surface(rundict_list, colorcode="O_mag"):
                     sites_values = [[site[value] * site['multiplicity']]
                                     for site in run['equivSiteList']
                                     if site['element'] == specie]
-                    value_list[i] = np.sum(sites_values) / nbSpecie
+                    value_list[i] = np.sum(sites_values) / nb_specie
                 if value_type == "min":
-                    Y_min = min([site[value]
+                    y_min = min([site[value]
                                  for site in run['equivSiteList']
                                  if site['element'] == specie])
-                    value_list[i] = Y_min
+                    value_list[i] = y_min
                 if value_type == "max":
-                    Y_max = max([site[value]
+                    y_max = max([site[value]
                                  for site in run['equivSiteList']
                                  if site['element'] == specie])
-                    value_list[i] = Y_max
+                    value_list[i] = y_max
         if not np.isnan(value_list).any():  # if no Nan value in the vector
             surface_color = griddata(
                 x_y_e[:, 0: 2], value_list, (grid_x, grid_y), method='cubic')
@@ -430,26 +433,27 @@ def plot_mag_surface(rundict_list, colorcode="O_mag"):
                 value_type, value, specie)
 
     textz = [
-        [
-            'x_na: ' +
-            '{:0.2f}'.format(
-                grid_x[i][j]) +
-            '<br>Sz: ' +
-            '{:0.2f}'.format(
-                grid_y[i][j]) +
-            '<br>E: ' +
-            '{:0.5f}'.format(
-                interp_E[i][j]) +
-            '<br>{}:'.format(colorbar_title) +
-            '{:0.5f}'.format(
-                surface_color[i][j]) for j in range(
-                grid_x.shape[1])] for i in range(
-            grid_x.shape[0])]
+                ["".join([
+                    'x_na: ',
+                    '{:0.2f}'.format(grid_x[i][j]),
+                    '<br>Sz: ',
+                    '{:0.2f}'.format(grid_y[i][j]),
+                    '<br>E: ',
+                    '{:0.5f}'.format(interp_e[i][j]),
+                    '<br>{}:'.format(colorbar_title),
+                    '{:0.5f}'.format(surface_color[i][j])
+                    ])
+
+            for j in range(grid_x.shape[1])
+            ]
+
+        for i in range(grid_x.shape[0])
+        ]
 
     data_surface = go.Surface(
-        x=x,
-        y=y,
-        z=interp_E,
+        x=x_values,
+        y=y_values,
+        z=interp_e,
         surfacecolor=surface_color,
         colorscale='Jet',
         colorbar=dict(
@@ -485,7 +489,7 @@ def plot_mag_surface(rundict_list, colorcode="O_mag"):
     scene = dict(
         xaxis=dict(axis), yaxis=dict(axis), zaxis=dict(axis),
         cameraposition=[[0.2, 0.5, 0.5, 0.2], [0, 0, 0], 4.8],
-        aspectratio=dict(x=1, y=1, z=1)
+        aspectratio=dict(x_values=1, y_values=1, z=1)
     )
 
     scene['xaxis']['title'] = "Na content"
@@ -661,7 +665,8 @@ def plot_mag_surface(rundict_list, colorcode="O_mag"):
     #                 axe_img = axes[-1].contourf(grid_x,
     #                                             grid_y, surface_color, cmap=cmap)
 
-    #             # axe.imshow(surface_color,  extent=(np.amin(x), np.amax(x), np.amin(y), np.amax(y)) )
+    #             # axe.imshow(surface_color,
+    #                       extent=(np.amin(x), np.amax(x), np.amin(y), np.amax(y)) )
 
     #             cbar = fig.colorbar(axe_img, ax=axes[-1])
 
@@ -671,7 +676,8 @@ def plot_mag_surface(rundict_list, colorcode="O_mag"):
     #                 short_2_long[value_type], specie, value))
     #         except KeyError as key_err:
     #             print(
-    #                 "No value for the key {} : you should probably compute bader charges ! ".format(key_err))
+    #                 "No value for the key {}".format(key_err))
+    #             print(": you should probably compute bader charges ! ")
 
     #     fig.tight_layout()
     #     plt.show(block=False)

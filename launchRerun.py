@@ -361,9 +361,9 @@ def main():
                 # job.set_job_folder(rerun_dir)
                 kpt = drawkpt(rundict.structure)
                 kpt.write_file(os.path.join(
-                    job.oldFolder, "linear_KPOINTS"))
+                    job.old_folder, "linear_KPOINTS"))
 
-        job.oldFolder = job.job_folder
+        job.old_folder = job.job_folder
         if file_system == "j":
             job.set_job_folder(read.get_file_name(dirname_path, dirname),
                                explicit_jobpath=True)
@@ -397,14 +397,14 @@ def main():
 
         for f_name in files_to_copy:
             try:
-                shutil.copy2('{0.oldFolder}/{1}'.format(job, f_name),
+                shutil.copy2('{0.old_folder}/{1}'.format(job, f_name),
                              '{0.job_folder}/{1}'.format(job, f_name))
             except Exception as ex:
                 print("error when copying", f_name, ex)
 
     if input("[r]emove unconverged folders ? ") == "r":
         for rundict in unconverged_jobs:
-            unconv_dir = rundict.oldFolder
+            unconv_dir = rundict.old_folder
             # if input("remove {0} ? Y / N ".format(unconv_dir))=="Y" :
             shutil.rmtree(unconv_dir)
             print("{} deleted ".format(unconv_dir))

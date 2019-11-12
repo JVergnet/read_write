@@ -55,7 +55,9 @@ def restrict_run_list(all_runs_input):
 
 
 def sort_run(rundict_list, sort_key="nelect"):
-    # Sort the valid vasprun according to their energy
+    """Sort the valid vasprun according to a defined keyword
+
+        valid sort_key = [nelect, energy_per_fu, x_na, d_oo]"""
     if sort_key is None:
         sort_key = "energy_per_fu"
 

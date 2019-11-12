@@ -26,6 +26,13 @@ import readRun_entries as read
 
 
 class Job(MPRelaxSet):
+    """Describe a VASP run BEFORE computation
+
+        Holds and modifies VASP inputs (Structure, INCAR, Kpoint,...)
+        before writing the files in the folder
+
+        uses MPRelaxSet .__init_ & .write to create files"""
+
     @property
     def structure(self):
         return self._structure
@@ -37,6 +44,7 @@ class Job(MPRelaxSet):
     def __init__(self, structure, entry_id,
                  user_param=None, user_incar=None,
                  job_folder="", **kwargs):
+
         # super().__init__(structure)
         self.explicit_jobpath = False
         self.entry_id = entry_id
@@ -49,8 +57,8 @@ class Job(MPRelaxSet):
             else default_incar()
 
         self.kwargs = kwargs
-        for (k, v) in kwargs.items():
-            setattr(self, k, v)
+        for (key, value) in kwargs.items():
+            setattr(self, key, value)
 
         # print(self.__dict__)
         self.standardize = False
@@ -59,7 +67,7 @@ class Job(MPRelaxSet):
         self.nb_cell = 1
         self.x_na = 0
         self.formula = ""
-        self.oldFolder = None
+        self.old_folder = None
         self.job_name = self.set_job_name()
 
     # @structure.deleter
@@ -89,6 +97,9 @@ class Job(MPRelaxSet):
         return self.job_folder
 
     def write_data_input(self, parent_path=None, explicit_jobpath=None):
+        """ Create the VASP inputs with parameters specified in the Job instance
+
+        lazy evaluation of the MPRelaxset __init__ to account for such changes"""
         if parent_path is not None:
             self.set_job_folder(parent_path, explicit_jobpath)
         print(self.kwargs)
@@ -109,7 +120,7 @@ class Job(MPRelaxSet):
         # print("POTCAR FUNCTIONNAL :", self.potcar_functional)
         self.write_input(self.job_folder)
 
-        if len(self.user_param) > 0:
+        if self.user_param is not None:
             # we also dump the data of the run into the job_folder
             print(json.dumps(self.user_param))
             with open('{}/param.json'.format(self.job_folder), 'w') as outfile:
@@ -139,9 +150,9 @@ class Job(MPRelaxSet):
                   user_incar=dict(rundict.parameters['incar']),
                   job_folder=rundict.job_folder)
         if new_folder is not None:
-            job.oldFolder = job.job_folder
+            job.old_folder = job.job_folder
             job.set_job_folder(new_folder)
-        return(job)
+        return job
 
 
 def default_incar():
@@ -172,7 +183,7 @@ def default_incar():
         'LMAXMIX': 4,
         'IVDW': 12
     }
-    return(incar_default)
+    return incar_default
 
 
 def get_pristine_list(structure_files, cif_folder, is_poscar=False):
@@ -194,7 +205,7 @@ def get_pristine_list(structure_files, cif_folder, is_poscar=False):
                                      name))
         print("OK\n")
 
-    return(pristine_job_list)
+    return pristine_job_list
 
 
 def get_structure_list_wrapper(pristine_structure_list,
@@ -297,7 +308,7 @@ def get_complete_structure_list(
     if launch_choice[0] not in ["b", "s", "t"]:
         job_list = create_list.remove_doubles(job_list)
 
-    return(job_list)
+    return job_list
 
 
 def adjust_incar(job_list, incar_setting=None,
@@ -314,15 +325,16 @@ def adjust_incar(job_list, incar_setting=None,
         try:
             perturb = float(
                 input('Perturb the initial position of atoms ? in Angstrom '))
-        except Exception as ex:
-            print("No perturbation")
+            assert (perturb > 0), "No perturbation"
+        except AssertionError as msg:
+            print(msg)
             perturb = 0
 
     for job in job_list:
         job.structure.perturb(perturb)
         job.user_incar.update(incar_out)
 
-    return(True)
+    return True
 
 
 def generate_job_folders(final_job_list,
@@ -347,14 +359,15 @@ def generate_job_folders(final_job_list,
         #     inc["NELECT"] =  vasp_input.nelect + fukui
         #     pos.write_file(folder_name+"/INCAR")
 
-    for j, job in enumerate(final_job_list):
-        job.write_data_input(project_dir)
+    for job in final_job_list:
+        job.set_job_folder(project_dir)
+        job.write_data_input()
 
         print("set written in {}".format(job.job_folder))
 
-        folder_list += []
+    # folder_list += []
 
-    return(folder_list)
+    return folder_list
 
 
 def make_selective_dynamic(final_job_list, selective_dynamic):
@@ -377,7 +390,7 @@ def make_selective_dynamic(final_job_list, selective_dynamic):
                 j = int(input("block site by index?"))
                 indices_to_block.append(j)
                 print("blocked indices : {}".format(indices_to_block))
-            except Exception as ex:
+            except Exception:
                 break
 
         for k in indices_to_block:
@@ -425,11 +438,15 @@ def main():
     file_list = [f for f in os.listdir(cif_folder) if (
         f.endswith('POSCAR') or f.endswith('cif'))]
 
-    if len(file_list) > 0 and \
-       input("found {} \n Work with these files ? Y/N".format(
-           file_list)) in ["Y", "y"]:
-        pristine_job_list = get_pristine_list(
-            file_list, cif_folder, is_poscar=True)
+    if len(file_list) > 0:
+        print("found {} \n ".format(file_list))
+        try:
+            assert input("Work with these files ? Y/N")[0] in ["Y", "y"], \
+                "pass"
+            pristine_job_list = get_pristine_list(
+                file_list, cif_folder, is_poscar=True)
+        except AssertionError:
+            pristine_job_list = []
 
     elif input("Browse existing runs in subfolder ? Y/N") == "Y":
         rundicts = read.collect_valid_runs(
@@ -441,7 +458,7 @@ def main():
         pristine_job_list = []
     if len(pristine_job_list) == 0:
         print("You have not selected a file to work on !")
-        return("Not OK")
+        return "Not OK"
 
         # ATTENTION !!!!
         # for entry in pristine_job_list :
@@ -464,20 +481,20 @@ def main():
                          parent_dir, project_name,
                          selective_dynamic=None)
 
-    return("OK")
+    return "OK"
 
 
-def substitution_desodiation_P2_P3():
+def substitution_desodiation_p2_p3():
     # Set the parameters ofthe run
     # parent_dir = "/home/jvergnet/frofro/honeycomb/"
     project_name = "substitued"
     # oxyde = True
 
     cif_folder = "/home/jvergnet/frofro/honeycomb/ref_POSCAR_MgMn"
-    cif_list_O3 = ["O3_POSCAR",
-                   "P3_POSCAR"]
+    # cif_list_O3 = ["O3_POSCAR",
+    #               "P3_POSCAR"]
 
-    cif_list_O2 = [  # "P2_EEL_POSCAR",
+    cif_list_o2 = [  # "P2_EEL_POSCAR",
         # "P2_EF_POSCAR",
         # "O2_L_POSCAR"
         # "P2P_EE_POSCAR",
@@ -490,34 +507,35 @@ def substitution_desodiation_P2_P3():
 
     cluster = True
 
-    incar_default = default_incar()
+    # incar_default = default_incar()
 
     if cluster:
         parent_folder = "/home/jvergnet/frofro/honeycomb/"
     else:
-        parent_folder = "/mnt/fbf83589-c1e0-460b-86cc-ec3cc4a64545/backup_cluster/backup_fro/honeycomb/"
+        parent_folder = \
+            "/mnt/fbf83589-c1e0-460b-86cc-ec3cc4a64545/backup_cluster/backup_fro/honeycomb/"
 
     project_name = "Hull_all"
 
     # get the O2 /P2 / O3 with Mg
-    Mg_pristine_stackings = get_pristine_list(
-        cif_list_O2, cif_folder, is_poscar=True)
+    pristine_stackings_mg = get_pristine_list(
+        cif_list_o2, cif_folder, is_poscar=True)
     # [ {'structure' : O2 , "id" : "O2 } ]
 
-    projectDir = parent_folder + project_name
+    project_dir = parent_folder + project_name
     i = 0
-    while (os.path.exists(projectDir)):
+    while os.path.exists(project_dir):
         i += 1
-        projectDir = parent_folder + project_name + str(i)
+        project_dir = parent_folder + project_name + str(i)
 
-    os.mkdir(projectDir)
-    os.chdir(projectDir)
+    os.mkdir(project_dir)
+    os.chdir(project_dir)
 
     for specie in ["Zn"]:
 
         os.mkdir(specie)
         os.chdir(specie)
-        specie_dir = projectDir + "/" + specie
+        specie_dir = project_dir + "/" + specie
 
         # get the pristine stackings for each specie
         # specie_pristine_stackings = get_complete_structure_list(Mg_pristine_stackings ,
@@ -526,7 +544,7 @@ def substitution_desodiation_P2_P3():
         # specie_pristine_stackings = Mg_pristine_stackings
 
         specie_pristine_stackings = []
-        for stacking in Mg_pristine_stackings:
+        for stacking in pristine_stackings_mg:
             entry = dict(stacking)
             entry["structure"].replace_species(
                 {Element("Mg"): Element(specie)})
@@ -548,9 +566,9 @@ def substitution_desodiation_P2_P3():
             generate_job_folders(final_job_list, specie_dir,
                                  specie_stacking['id'])
 
-        os.chdir(projectDir)
+        os.chdir(project_dir)
 
-    return("OK")
+    return "OK"
 
 
 def multi_distortion_desodiation_scan():
@@ -583,7 +601,7 @@ def multi_distortion_desodiation_scan():
     else:
         parent_folder = "/mnt/fbf83589-c1e0-460b-86cc-ec3cc4a64545/backup_cluster/backup_fro/"
 
-    projectName = "prismatic_zoom"
+    project_name = "prismatic_zoom"
     cif_folder = "/home/jvergnet/frofro/honeycomb/ref_POSCAR_MgMn/"
     cif_list = ["SYM_P2EEL_POSCAR"]
     # get the O2 /P2 / O3 with Mg
@@ -591,10 +609,10 @@ def multi_distortion_desodiation_scan():
         cif_list, cif_folder, is_poscar=True)
     # [ {'structure' : O2 , "id" : "O2 } ]
     print(pristine_stackings)
-    projectDir = read.get_file_name(parent_folder, projectName, ext="")
+    project_dir = read.get_file_name(parent_folder, project_name, ext="")
 
-    os.mkdir(projectDir)
-    os.chdir(projectDir)
+    os.mkdir(project_dir)
+    os.chdir(project_dir)
 
     for specie_stacking in pristine_stackings:
         # stacking_dir = projectDir+"/"+specie_stacking['id']
@@ -606,24 +624,26 @@ def multi_distortion_desodiation_scan():
         ordered_stackings = [{'structure': specie_stacking['structure'],
                               'id': specie_stacking['id']}]
         # get_complete_structure_list([specie_stacking], launch_choice='s')
-        for d in ordered_stackings:
-            d['structure'].remove_species(["Na"])
+        for struct_stacking in ordered_stackings:
+            struct_stacking['structure'].remove_species(["Na"])
         print([s["structure"] for s in ordered_stackings])
-        with Pool(processes=cpu_count()) as p:
-            list_of_struct_list = p.starmap(
-                get_structure_list_wrapper, [
-                    ([d], 'b') for d in ordered_stackings])
-            p.close()
-            p.join()
+        with Pool(processes=cpu_count()) as parrallel_threads:
+            list_of_struct_list = parrallel_threads.starmap(
+                get_structure_list_wrapper, [([struct_stacking], 'b')
+                                             for struct_stacking in ordered_stackings])
+            parrallel_threads.close()
+            parrallel_threads.join()
 
         final_job_list = list(chain(*list_of_struct_list))
         # for desodiated_structure in desodiated_stackings :
         #     print(desodiated_structure["id"])
         #     # desodiate each stacking and write create folders for each state
-        #     all_structures += get_complete_structure_list([desodiated_structure],launch_choice='b')
+        #     all_structures += get_complete_structure_list(\
+        #                           [desodiated_structure],launch_choice='b')
         #     # for prismatic_disto_struct in prismatic_distorted_structures :
         #     #     print(prismatic_disto_struct["id"])
-        #     #     all_structures += get_complete_structure_list([prismatic_disto_struct],launch_choice='t')
+        #     #     all_structures += get_complete_structure_list(\
+        #                           [prismatic_disto_struct],launch_choice='t')
 
         # , name_format="sulfide")
 
@@ -631,12 +651,12 @@ def multi_distortion_desodiation_scan():
                      VdW=None, perturb=None)
 
         generate_job_folders(final_job_list,
-                             projectDir, specie_stacking['id'],
+                             project_dir, specie_stacking['id'],
                              selective_dynamic=True)
 
-    os.chdir(projectDir)
+    os.chdir(project_dir)
 
-    return("OK")
+    return "OK"
 
 
 if __name__ == '__main__':

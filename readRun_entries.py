@@ -69,7 +69,11 @@ def get_job_list(main_folder, file_system_choice=None):
 
 
 class Rundict(ComputedStructureEntry):
-    "base class for vasprun computation"
+    """Describe a VASP run AFTER computation
+
+        Holds VASP inputs & outputs
+        Compute and holds post-processing results
+        """
 
     status_dict = {
         3:    "post-run : converged",
