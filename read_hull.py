@@ -106,25 +106,21 @@ def generate_hull_entries(run_list, remove_extremes=False, coord="x_na"):
 # =============================================================================
 
 
-def plot_hull_graphs(sorted_entries, **kwargs):
+def plot_hull_graphs(sorted_entries, coord="x_na", **kwargs):
     "kwargs : 'coord', 'simple_energy_graph' ,'hull','voltage' = True/False"
     # print(hull_entries)
     converged_entries = [d for d in sorted_entries if d.status >= 3]
-    if "coord" in kwargs.keys():
-        coord = kwargs["coord"]
-    elif len(set([d.x_na for d in sorted_entries])) > 1:
-        coord = "x_na"
-    elif input("convex hull on the doo? [Y]") in ["Y", "y"]:
-        coord = "dOO_min"
-    else:
+    if len(set([getattr(d, coord) for d in sorted_entries])) <= 1:
+        print("not enough runs with distinct {}".format(coord))
         coord = None
 
     if "simple_energy_graph" in kwargs.keys():
         simple_energy_graph = kwargs["simple_energy_graph"]
-    elif input("plot simple energy graph ? [Y/N] ") == "Y":
-        simple_energy_graph = True
     else:
-        simple_energy_graph = False
+        simple_energy_graph = True if \
+            input("plot simple energy graph ? [Y/N]")[0] == "Y" \
+            else False
+
     if simple_energy_graph:
         sorted_converged_entries = sorted(
             converged_entries, key=lambda x: x.energy_per_fu)
@@ -141,7 +137,8 @@ def plot_hull_graphs(sorted_entries, **kwargs):
         if "hull" in kwargs.keys():
             hull = kwargs["hull"]
         else:
-            hull = input("plot convex_hull ? [Y/N] ") == "Y"
+            string = "plot convex_hull on {}? [Y/N] ".format(coord)
+            hull = bool(input(string) == "Y")
 
         if hull:
             sorted_entries = generate_hull_entries(sorted_entries)
