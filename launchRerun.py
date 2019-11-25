@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # launchRerun.py
-# Creates VASP imput files for vasp in the folder projectName/jobFformula
-# INPUT : the projectDirectory
-# OUTPUT : creates rerun of the specified project with specified strategy
-# (static, relax or non scf)
+"""Creates VASP imput files for vasp in the folder projectName/jobFformula
+INPUT : the projectDirectory
+OUTPUT : creates rerun of the specified project with specified strategy
+(static, relax, ...) """
 
 
 import os
@@ -11,28 +11,16 @@ import shutil
 import sys
 
 from pymatgen.io.vasp.inputs import Kpoints
-# from pymatgen import Structure
-from pymatgen.io.vasp.sets import MITRelaxSet  # , MPNonSCFSet  # ,MPStaticSet,
+from pymatgen.io.vasp.sets import MITRelaxSet
 
+import filter_runs
 import launchDisordered as launch
-# import platform_id
 import readRun_entries as read
-# from pymatgen.io.vasp.outputs import Vasprun
-# from pymatgen.io.vasp.inputs import Incar
-# from pymatgen.core.periodic_table import Element
-# import platform
-# import matplotlib
 from drawKpoints import drawkpt
-import filter_runs as filter_runs
-
-# import read_hull as hull
-
-
-# if platform.node() in 'bipbip.lsd.univ-montp2.fr':
-#     matplotlib.use("Agg")
 
 
 def less_precise_incar(struct):
+    "low precision parameters"
     return(dict(ENCUT=600,
                 PREC='Normal',
                 EDIFFG=-1E-01,
@@ -47,6 +35,7 @@ def less_precise_incar(struct):
 
 
 def more_precise_incar(struct):
+    "higher precision parameters"
     return(dict(LCHARG="True",
                 ENCUT=700,
                 PREC='Accurate',
@@ -61,6 +50,7 @@ def more_precise_incar(struct):
 
 
 def ultra_precise_incar():
+    "VERY HIGH precision parameters"
     return(dict(NSW=100,
                 ENCUT=650,
                 PREC='Accurate',
@@ -80,6 +70,7 @@ def ultra_precise_incar():
 
 
 def single_point_incar():
+    "higher precision parameters without ionic relaxation"
     return(dict(NSW=0,
                 ENCUT=700,
                 EDIFF_PER_ATOM=1e-06,
@@ -91,6 +82,8 @@ def single_point_incar():
 
 
 def prompt_rerun_type():
+    """define the type of rerun (rerun_type) and subtype (incar_type)
+     by user input"""
     rerun_type, incar_type = (None, None)
 
     rerun_dict = {'s': 'single_point',
@@ -117,9 +110,9 @@ def prompt_rerun_type():
                           'p': "parcharg"}
 
         elif rerun_type == "relaxation":
-            incar_dict = {'l': 'less_precise ',
-                          'm': 'more_precise ',
-                          'r': 'rebuild_from_scratch ',
+            incar_dict = {'l': 'less_precise',
+                          'm': 'more_precise',
+                          'r': 'rebuild_from_scratch',
                           'u': 'ultra_precise',
                           'p': 'poscar_only'}
 
@@ -134,8 +127,25 @@ def prompt_rerun_type():
     return(rerun_type, incar_type)
 
 
+def filtering_runs(rerun_select, rerun_list):
+    "filter the post-runs to rerun using succesive filters"
+    selected_runs = rerun_list
+    if input("apply further selection on runs ? : Y / n ") == "Y":
+        if rerun_select in ["c"]:
+            sieve_lvl = filter_runs.select_sieve_level()
+            selected_runs = filter_runs.hull_filtering(
+                sieve_lvl, selected_runs)
+            print("number of selected runs : {}".format(
+                len(selected_runs)))
+
+        if input("folder by folder ? : Y / n ") == "Y":
+            selected_runs = filter_runs.idv_filtering(selected_runs)
+            print("nb of structures : {0} ".format(len(rerun_list)))
+    return rerun_list
+
+
 def main():
-    """Set the parameters ofthe run"""
+    "main function : read runs in folder & rerun them according to user input"
     try:
         main_dir = sys.argv[1]
     except IndexError:
@@ -408,22 +418,6 @@ def main():
             # if input("remove {0} ? Y / N ".format(unconv_dir))=="Y" :
             shutil.rmtree(unconv_dir)
             print("{} deleted ".format(unconv_dir))
-
-
-def filtering_runs(rerun_select, rerun_list):
-    selected_runs = rerun_list
-    if input("apply further selection on runs ? : Y / n ") == "Y":
-        if rerun_select in ["c"]:
-            sieve_lvl = filter_runs.select_sieve_level()
-            selected_runs = filter_runs.hull_filtering(
-                sieve_lvl, selected_runs)
-            print("number of selected runs : {}".format(
-                len(selected_runs)))
-
-        if input("folder by folder ? : Y / n ") == "Y":
-            selected_runs = filter_runs.idv_filtering(selected_runs)
-            print("nb of structures : {0} ".format(len(rerun_list)))
-    return rerun_list
 
 
 if __name__ == '__main__':

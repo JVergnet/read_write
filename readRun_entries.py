@@ -114,7 +114,7 @@ class Rundict(ComputedStructureEntry):
 
     @property
     def nelect(self):
-        return self.parameters["incar"]['NELECT']
+        return self.parameters["incar"].get('NELECT', 0)
 
     @property
     def name_tag(self):
@@ -123,13 +123,16 @@ class Rundict(ComputedStructureEntry):
 
     @property
     def mag(self):
-        try:
-            mag_tot = Oszicar(os.path.join(
-                self.job_folder, "OSZICAR")).ionic_steps[-1]["mag"]
-            return mag_tot / len(self.structure.indices_from_symbol("Mn"))
-        except Exception:
-            print("could not define mag for", self.name_tag)
-            return None
+        if not hasattr(self, '_mag'):
+            self._mag = None
+            try:
+                mag_tot = Oszicar(os.path.join(
+                    self.job_folder, "OSZICAR")).ionic_steps[-1]["mag"]
+                self._mag = mag_tot / \
+                    len(self.structure.indices_from_symbol("Mn"))
+            except Exception:
+                print("could not define mag for", self.name_tag)
+        return self._mag
 
     def generate_tags(self):
         " progressively generates tags & attributes depending on the convergence "
@@ -147,7 +150,7 @@ class Rundict(ComputedStructureEntry):
         return "tags generated"
 
     def get_nametag(self):
-        " nameTag : get name of the current structure in a string nameTag"
+        "get nice formula of the current structure"
         self.nb_cell = get_nb_cell(self.structure)
 
         # Normalizing composition to get Nax My O2
@@ -187,14 +190,17 @@ class Rundict(ComputedStructureEntry):
         dict_of_run = super().as_dict()
         dict_of_run["@module"] = self.__class__.__module__
         dict_of_run["@class"] = self.__class__.__name__
-        dict_of_run.update(dict(status=self.status,
-                                status_string=self.status_string,
-                                job_folder=self.job_folder,
-                                stacking=self.stacking,
-                                id=self.str_id,
-                                # structure_data=self.structure_data.as_dict()
-                                # mag=self.mag
-                                ))
+        list_of_attr = ['status', 'status_string',
+                        'job_folder', 'stacking']
+        # even valid for invalid folders
+        if self.status > 0:  # pre-run : just the structure
+            list_of_attr += ['str_id', 'nb_cell', 'x_na', 'volume', 'formula']
+        if self.status > 1:  # unconverged / corrupted run : just the energy
+            list_of_attr += ["energy", "energy_per_fu"]
+        if self.status >= 3 and self.bader_done:  # converged run : anything ?
+            list_of_attr.append("structure_data")
+
+        dict_of_run.update({key: getattr(self, key) for key in list_of_attr})
         return dict_of_run
 
     # def from_dict(cls, d):

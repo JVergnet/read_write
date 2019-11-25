@@ -7,15 +7,13 @@ import traceback
 import read_hull as hull
 
 
-def restrict_run_list(all_runs_input):
+def restrict_run_list(all_runs_input, x_coord):
     """
     defines a restriction on the runs
     if the given list is not locked, performs filtering on the list
     """
     selection_loop = True
     while selection_loop:
-
-        x_coord = select_x_coord()
 
         # STACKING FAMILY FILTER ================
         restricted_stack_runs = stacking_filter(all_runs_input)
@@ -133,7 +131,8 @@ def hull_filtering(sieve_lvl, restricted_stack_runs, x_coord="x_na"):
             selected_runs = restricted_stack_runs
         else:
             restricted_stack_runs = hull.generate_hull_entries(
-                restricted_stack_runs, remove_extremes=None, coord="dOO_min")
+                restricted_stack_runs,
+                coord=x_coord)
             selected_runs = [
                 d for d in restricted_stack_runs if d.status >= sieve_lvl]
     return selected_runs

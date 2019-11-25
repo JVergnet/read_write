@@ -25,20 +25,12 @@ def generate_hull_entries(run_list, remove_extremes=False, coord="x_na"):
 
     Sort the entries according to 1) their Na proportion and 2) their energy
     """
-
+    print("computing hull in 2D : {} and energy".format(coord))
     converged_entries = [d for d in run_list if d.status >= 3]
     sorted_entries = sorted(converged_entries,
                             key=lambda x: (
                                 getattr(x, coord),
                                 x.energy_per_fu))
-
-    if remove_extremes is None and input(
-            "REMOVE  extreme composition x=0 x=1 ?") == "Y":
-        remove_extremes = True
-
-    if remove_extremes:
-        sorted_entries = [x for x in sorted_entries
-                          if x.x_na < 1 and x.x_na > 0]
 
     # Clean Entries
     # =================================================

@@ -1,6 +1,8 @@
 # nupdown_scan.py
+""" Plots 2D heatmaps (svg) and 3d surfaces (html) from abstract run data"""
+# from multiprocessing import Pool, cpu_count
 
-from multiprocessing import Pool, cpu_count
+import os
 
 # import matplotlib.cm as cm
 # from matplotlib.colors import LogNorm
@@ -9,21 +11,23 @@ import matplotlib.pyplot as plt
 # generric libraries
 import numpy as np
 # pymatgen libraries
-from pymatgen.io.vasp.outputs import Oszicar
+# from pymatgen.io.vasp.outputs import Oszicar
 from scipy.interpolate import griddata
 
 # personnal libraries
 # import readRun_entries as read
 import generic_plot as g_plot
+import platform_id
 
 # from skimage import measure
 
 
 try:
     # plotting libraries
-    import plotly.offline as po
+    # import plotly.offline as po
     # import plotly.plotly as py
-    import plotly.graph_objs as go
+    import plotly.graph_objects as go
+    import plotly.io as p_io
     # from plotly import tools
     plotly_available = True
 except Exception as ex:
@@ -33,10 +37,23 @@ except Exception as ex:
 # === MAIN FUNCTION ===========
 
 
-def plot_all_graphs(rundict_list, nupdown=False, nelect=True):
+def plot_all_graphs(rundict_list, nupdown=None, nelect=None):
     g_plot.set_mpl_rc_params()
+    plot_choice = {}
+    for param, param_str in zip([nupdown, nelect], ['nupdown', 'nelect']):
+        if param is None:
+            try:
+                input_plot_choice = str(
+                    input("plot {} graphs ? [Y]/n".format(param_str)))
+                assert len(input_plot_choice) > 0, "incorrect length"
+                plot_choice[param_str] = bool(input_plot_choice[0] == "Y")
+            except AssertionError:
+                print('default to False')
+                plot_choice[param_str] = False
+        else:
+            plot_choice[param_str] = param
 
-    if nupdown:
+    if plot_choice['nupdown']:
         selected_runs = prepare_nupdown_data(rundict_list)
         if input("Plot mag 3d surface ? [Y]") in ["Y", "y"]:
             colorcode = "O_mag" if input("colorcode ? O_mag ") == "Y" \
@@ -47,7 +64,7 @@ def plot_all_graphs(rundict_list, nupdown=False, nelect=True):
             selected_runs = [s for s in selected_runs if s["x_na"] > 0.28]
             plot_mag_heatmap(selected_runs)
 
-    if nelect:
+    if plot_choice['nelect']:
         if input("Plot nelect heatmap ? [Y]") in ["Y", "y"]:
             plot_nelect_heatmap(rundict_list)
 
@@ -55,29 +72,10 @@ def plot_all_graphs(rundict_list, nupdown=False, nelect=True):
 # === GETTING DATA =============
 
 
-def get_mag_tag_list(rundict_list):
-
-    vasp_run_poll = []
-    with Pool(processes=cpu_count()) as parallel_threads:
-        vasp_run_poll = parallel_threads.map(get_mag_tag_single, rundict_list)
-        parallel_threads.close()
-        parallel_threads.join()
-
-    return vasp_run_poll
-
-
-def get_mag_tag_single(rundict):
-    if getattr(rundict, "mag", None) is None:
-        rundict.mag = Oszicar(rundict.job_folder + "/OSZICAR"
-                              ).ionic_steps[-1]["mag"] / rundict.nb_cell
-    return rundict
-
-
 def prepare_nupdown_data(rundict_list):
-    rundict_list = get_mag_tag_list(rundict_list)
-    sorted_runs = sorted(
-        rundict_list,
-        key=lambda k: (k.x_na, k.mag, k.energy_per_fu))
+
+    sorted_runs = sorted(rundict_list,
+                         key=lambda k: (k.x_na, k.mag, k.energy_per_fu))
     selected_runs = [sorted_runs[0]]
     for run in sorted_runs:
         if run.mag != selected_runs[-1].mag or run.x_na != selected_runs[-1].x_na:
@@ -103,7 +101,8 @@ def build_x_y_e(rundict_list, attr_x, attr_y):
               format(attr_x, attr_x_value, len(struct_list_slice), e_min))
 
         for rundict in struct_list_slice:
-            rundict.e_valley = (rundict.energy_per_fu - e_min)  # in meV
+            rundict.e_valley = (rundict.energy_per_fu -
+                                e_min)*1000   # in meV
 
     x_y_e = np.array(
         [[getattr(d, attr_x), getattr(d, attr_y), d.e_valley] for d in rundict_list])
@@ -125,20 +124,32 @@ def build_x_y_c(rundict_list, attr_x, attr_y,
             print(" no {} in the structure !!".format(specie))
             value_of_struct = np.nan
             continue
-
+        print("{} {} in the struct {}".format(
+            nb_species, specie, rundict.name_tag))
         # get the value for each non equiv pt
-        sites_values = [s.properties[attr_z]
-                        for s in rundict.structure_data.sites
-                        if s.specie.name == specie]
-        # perform reduction of data (min/max/mean/std) following attr_z_func
-        value_of_struct = getattr(np, attr_z_func)(sites_values)
+        try:
+            sites_values = [s.properties[attr_z]
+                            for s in rundict.structure_data.sites
+                            if s.specie.name == specie]
+        except KeyError:
+            print("no {} in {}".format(attr_z, rundict.name_tag))
+        else:
+            # perform reduction of data (min/max/mean/std) following attr_z_func
+            print("retrieved {} of {} ".format(attr_z, specie))
+            value_of_struct = getattr(np, attr_z_func)(sites_values)
+            print("computed {} of {} of {} ".format(
+                attr_z_func, attr_z, specie))
+            x_y_c.append([getattr(rundict, attr_x),
+                          getattr(rundict, attr_y),
+                          value_of_struct])
+    print("all structures have been treated")
+    all_charge_array = np.array(x_y_c)
+    print("All charge array : shape {0.shape},  size : {0.size}".format(
+        all_charge_array))
 
-        x_y_c.append([getattr(rundict, attr_x),
-                      getattr(rundict, attr_y),
-                      value_of_struct])
+    assert all_charge_array.size > 0, "not enough charge data, Bader data probably missing"
 
-    x_y_c = np.array(x_y_c)
-    return x_y_c
+    return all_charge_array
 
 
 def interp_xye(x_y_z):
@@ -151,7 +162,7 @@ def interp_xye(x_y_z):
                                  make_linspace(x_y_z[:, 1]))
     # print( XYE[:,2])
     interp_e = griddata(x_y_z[:, 0:2], x_y_z[:, 2],
-                        (grid_x, grid_y), method='linear')
+                        (grid_x, grid_y), method='cubic')
     min_e = np.nan_to_num(interp_e).min()
     max_e = np.nan_to_num(interp_e).max()
     # interp_e = interp_e - min_e
@@ -236,47 +247,72 @@ def plot_abstract_heatmap(rundict_list, attr_x="nelect", attr_y="doo", bader_lan
     """
     generic method to draw energy heatmap and other bader heatmap if required
     """
-    if bader_landscapes is None:
-        draw_bader_landscapes = False
-        nb_plots = 1
-    else:
-        draw_bader_landscapes = True
-        nb_plots = len(bader_landscapes) + 1
+    plot_data = []
 
-    file_name = 'landscape_energy'
-    fig = plt.figure(file_name, figsize=(21, 7))
+    x_y_e = build_x_y_e(rundict_list, attr_x, attr_y)
+    plot_data.append({"title": 'landscape_energy',
+                      "data": x_y_e,
+                      "cmap": 'coolwarm'})
+
+    if bader_landscapes is not None:
+        short_2_long = {"std": "Standard Deviation",
+                        "min": "Minimum",
+                        "max": "Maximum",
+                        "mean": "Average"}
+        for(specie, attr_z, attr_z_func, cmap) in bader_landscapes:
+            try:
+                x_y_c = build_x_y_c(rundict_list, attr_x, attr_y,
+                                    specie=specie, attr_z=attr_z,
+                                    attr_z_func=attr_z_func)
+            except AssertionError as ex:
+                # the assert in "build_x_y_c" check that bader data is present
+                # if raised, we do not plot the axe
+                print(ex)
+            else:
+                plot_title = 'Landscape_{}_of_{}_{}'.format(
+                    short_2_long[attr_z_func], specie, attr_z)
+                plot_data.append(
+                    {"title": plot_title, "data": x_y_c, "cmap": cmap})
+
+    nb_plots = len(plot_data)
+    fig = plt.figure("2D_landscapes", figsize=(7*nb_plots, 7))
     axe = fig.add_subplot(1, nb_plots, 1)
-    plot_energy_landscape(rundict_list,
-                          fig, axe,
-                          attr_x=attr_x, attr_y=attr_y)
+    data_dict = plot_data[0]
+    plot_energy_landscape(data_dict["data"], fig, axe,
+                          attr_x=attr_x, attr_y=attr_y,
+                          plot_title=data_dict["title"],
+                          cmap=data_dict["cmap"])
 
-    if draw_bader_landscapes:
-        for(j, (specie, attr_z, z_func, cmap)) in enumerate(bader_landscapes):
-            axe = fig.add_subplot(1, nb_plots, j+2)
-            plot_charge_landscape(rundict_list, fig, axe,
-                                  attr_x=attr_x, attr_y=attr_y,
-                                  specie=specie, attr_z=attr_z,
-                                  attr_z_func=z_func, cmap=cmap)
+    for (j, data_dict) in enumerate(plot_data[1:]):
+        axe = fig.add_subplot(1, nb_plots, j+2)
+        plot_charge_landscape(data_dict["data"], fig, axe,
+                              attr_x=attr_x, attr_y=attr_y,
+                              plot_title=data_dict["title"],
+                              cmap=data_dict["cmap"])
+
     fig.tight_layout()
     plt.show(block=False)
 
 
-def plot_energy_landscape(rundict_list, fig, axe, attr_x="nelect", attr_y="doo"):
+def plot_energy_landscape(x_y_e, fig, axe, attr_x="nelect", attr_y="doo", plot_title="", cmap='coolwarm'):
     " plot energy heatmap using abstract attributes for x and y"
-    x_y_e = build_x_y_e(rundict_list, attr_x, attr_y)
-    # XYE =  np.flipud( XYE)
+
     # interpolation of the grid of computed points
     grid_x, grid_y, interp_e = interp_xye(x_y_e)
     # surface_color = interp_e
     # colorbar_title = "Energy"
 
-    bounds = np.linspace(0, 3, num=16, endpoint=True)
+    bounds = np.linspace(0, 3000, num=16, endpoint=True)
+    interp_nice = interp_e[~np.isnan(interp_e)]
+    bounds = np.linspace(
+        interp_nice.min(), interp_nice.max()/2, num=41, endpoint=True)
+
     norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
     e_img = axe.contourf(grid_x,
                          grid_y,
                          interp_e,
                          bounds,
-                         cmap='coolwarm',
+                         cmap=cmap,
                          norm=norm,
                          extend='max')
     # axe_img.cmap.set_under('white')
@@ -296,30 +332,20 @@ def plot_energy_landscape(rundict_list, fig, axe, attr_x="nelect", attr_y="doo")
     # Add the contour line levels to the colorbar
     # cbar.add_lines(contours)
 
-    axe.set_xlabel('$N_{electrons}$')
-    axe.set_ylabel('$d_{OO}$')
+    axe.set_xlabel(attr_x)
+    axe.set_ylabel(attr_y)
     axe.title.set_text('Energy landscape')
 
 
-def plot_charge_landscape(rundict_list, fig, axe,
+def plot_charge_landscape(x_y_c, fig, axe,
                           attr_x="nelect", attr_y="doo",
-                          specie="O", attr_z="charge",
-                          attr_z_func="min", cmap='Reds'):
+                          plot_title="", cmap='Reds'):
     " plot charge heatmap using abstract attributes for x and y"
 
-    short_2_long = {"std": "Standard Deviation",
-                    "min": "Minimum",
-                    "max": "Maximum",
-                    "mean": "Average"}
-    try:
-        x_y_c = build_x_y_c(rundict_list, attr_x, attr_y,
-                            specie=specie, attr_z=attr_z,
-                            attr_z_func=attr_z_func)
-        grid_x, grid_y, interp_c = interp_xye(x_y_c)
-    except KeyError:
-        print("key not found")
-        return False
-        # interpolation of the grid of computed points
+    # may raise an AssertionError catched in plot_abstract_heatmap
+
+    # interpolation of the grid of computed points
+    grid_x, grid_y, interp_c = interp_xye(x_y_c)
 
     # surface_color = interp_e
     # colorbar_title = "Energy"
@@ -354,142 +380,124 @@ def plot_charge_landscape(rundict_list, fig, axe,
     # Add the contour line levels to the colorbar
     # cbar.add_lines(contours)
 
-    axe.set_xlabel('$N_{electrons}$')
-    axe.set_ylabel('$d_{OO}$')
-    plot_title = 'Landscape_{}_of_{}_{}'.format(
-        short_2_long[attr_z_func], specie, attr_z)
+    axe.set_xlabel(attr_x)
+    axe.set_ylabel(attr_y)
 
     axe.title.set_text(plot_title)
     return True
 
 
 # === PLOTLY REQUIRED
-def plot_mag_surface(rundict_list, colorcode="O_mag"):
+def plot_mag_surface(rundict_list, colorcode="O_mag", attr_x="x_na", attr_y="mag"):
 
     if not plotly_available:
         print("plotly could not be imported, \n 3D plots not available")
         return False
 
-    mag_list = rundict_list
-    for x_na in set([rundict.x_na for rundict in mag_list]):
-        struct_list_slice = [
-            rundict for rundict in mag_list if rundict.x_na == x_na]
-        e_min = min([rundict.energy_per_fu for rundict in struct_list_slice])
-        print(
-            " x_na ={} :  {} runs, E min = {:.2f} ".format(
-                x_na, len(struct_list_slice), e_min))
-        for rundict in struct_list_slice:
-            rundict.e_valley = 1000 * (rundict.energy_per_fu - e_min)
-
-    x_y_e = np.array([[rundict.x_na, rundict.mag, rundict.e_valley]
-                      for rundict in mag_list if rundict.status >= 3])
+    x_y_e = build_x_y_e(rundict_list, attr_x, attr_y)
 
     # interpolation of the grid of computed points
-    x_values = np.linspace(min(x_y_e[:, 0]), max(x_y_e[:, 0]), num=80)
-    y_values = np.linspace(min(x_y_e[:, 1]), max(x_y_e[:, 1]), num=50)
+    grid_x, grid_y, interp_e = interp_xye(x_y_e)
 
-    grid_x, grid_y = np.meshgrid(x_values, y_values)
-
-    interp_e = griddata(x_y_e[:, 0: 2], x_y_e[:, 2],
-                        (grid_x, grid_y), method='cubic')
-
-    surface_color = interp_e
     colorbar_title = "Energy"
     file_name = 'Sz_landscape_energy.html'
-    if colorcode == "O_mag":
-        specie = "O"
-        value = "charge"
-        value_type = "min"
-        value_list = np.zeros(len(mag_list))
-        for i, run in enumerate(mag_list):
-            nb_specie = len(run.structure.indices_from_symbol(specie))
-            if nb_specie == 0:
-                print(" no {} in the structure !!".format(specie))
-                value_list[i] = np.nan
-                break
-            else:
-                # get the value for each non equiv pt
+    # if colorcode == "O_mag":
+    specie = "O"
+    attr_z = "charge"
+    attr_z_func = "min"
+    # cmap = 'Reds'
 
-                if value_type == "mean":
-                    sites_values = [[site[value] * site['multiplicity']]
-                                    for site in run['equivSiteList']
-                                    if site['element'] == specie]
-                    value_list[i] = np.sum(sites_values) / nb_specie
-                if value_type == "min":
-                    y_min = min([site[value]
-                                 for site in run['equivSiteList']
-                                 if site['element'] == specie])
-                    value_list[i] = y_min
-                if value_type == "max":
-                    y_max = max([site[value]
-                                 for site in run['equivSiteList']
-                                 if site['element'] == specie])
-                    value_list[i] = y_max
-        if not np.isnan(value_list).any():  # if no Nan value in the vector
-            surface_color = griddata(
-                x_y_e[:, 0: 2], value_list, (grid_x, grid_y), method='cubic')
-            colorbar_title = "{} {} of {}".format(value_type, value, specie)
-            file_name = 'Sz_landscape_{}_{}_of_{}.html'.format(
-                value_type, value, specie)
+    try:
+        x_y_c = build_x_y_c(rundict_list, attr_x, attr_y,
+                            specie=specie, attr_z=attr_z,
+                            attr_z_func=attr_z_func)
+        print("generated x_y_c")
+        grid_x, grid_y, interp_c = interp_xye(x_y_c)
+        print("interpolation done")
+        surface_color = interp_c
+        colorbar_title = "{} {} of {}".format(attr_z_func, attr_z, specie)
+    except KeyError as ex:
+        print("key {} not found".format(ex),
+              "fallback surface color = energy")
+        surface_color = interp_e
+        colorbar_title = "Energy"
 
+    # defining text on hover
     textz = [
-                ["".join([
-                    'x_na: ',
-                    '{:0.2f}'.format(grid_x[i][j]),
-                    '<br>Sz: ',
-                    '{:0.2f}'.format(grid_y[i][j]),
-                    '<br>E: ',
-                    '{:0.5f}'.format(interp_e[i][j]),
-                    '<br>{}:'.format(colorbar_title),
-                    '{:0.5f}'.format(surface_color[i][j])
-                    ])
+        ["".join([
+            'x_na: {:0.2f}'.format(grid_x[i][j]),
+            '<br>Sz: {:0.2f}'.format(grid_y[i][j]),
+            '<br>E: {:0.5f}'.format(interp_e[i][j]),
+            '<br>{}: {:0.5f}'.format(
+                colorbar_title, surface_color[i][j])
+        ])
 
             for j in range(grid_x.shape[1])
-            ]
-
-        for i in range(grid_x.shape[0])
         ]
 
+        for i in range(grid_x.shape[0])
+    ]
+    # main surface with colors
     data_surface = go.Surface(
-        x=x_values,
-        y=y_values,
+        x=grid_x,
+        y=grid_y,
         z=interp_e,
         surfacecolor=surface_color,
         colorscale='Jet',
-        colorbar=dict(
-            title=colorbar_title,
-            titleside='top'
-        ),
+        reversescale=True,
+        cmax=7,
+        cmin=6.3,
+        cmid=6.8,
+        colorbar={"title": colorbar_title, "titleside": 'top'},
+
         text=textz,
         hoverinfo='text',
-
-    )
-
-    data_scatter = go.Scatter3d(
-        x=x_y_e[:, 0],
-        y=x_y_e[:, 1],
-        z=x_y_e[:, 2],
-        mode='markers',
-        marker=dict(
-            size=5,
-            symbol="diamond-tall"
+        contours=dict(
+            x={"show": False, "highlight": False},
+            y={"show": False, "highlight": False},
+            z={"show": True,
+               "start": 25,
+               "size": 100,
+               "color": 'rgb(111,151,255)',
+                "width": 1,
+                "highlight": False}
+        ),
+        lighting=dict(
+            ambient=0.8,  # 0.8,
+            specular=0.1,  # 0.05,
+            diffuse=0.7,  # 0.8,
+            roughness=0.3  # 0.5
         )
+
     )
+    data = [data_surface]
+
+    orange_dots = False
+    if orange_dots:
+        # orange dots to find computed points
+        data_scatter = go.Scatter3d(
+            x=x_y_e[:, 0],
+            y=x_y_e[:, 1],
+            z=x_y_e[:, 2],
+            mode='markers',
+            marker=dict(
+                size=5,
+                symbol="diamond"
+            )
+        )
+        data.append(data_scatter)
 
     axis = dict(
         title='x Axis',
-        showbackground=True,
+        showbackground=False,
         backgroundcolor="rgb(230, 230,230)",
         gridcolor="rgb(255, 255, 255)",
         zerolinecolor="rgb(255, 255, 255)",
     )
 
-    data = [data_surface, data_scatter]
-
     scene = dict(
         xaxis=dict(axis), yaxis=dict(axis), zaxis=dict(axis),
-        cameraposition=[[0.2, 0.5, 0.5, 0.2], [0, 0, 0], 4.8],
-        aspectratio=dict(x_values=1, y_values=1, z=1)
+        aspectratio=dict(x=2, y=1.3, z=1)
     )
 
     scene['xaxis']['title'] = "Na content"
@@ -504,7 +512,24 @@ def plot_mag_surface(rundict_list, colorcode="O_mag"):
 
     fig = go.Figure(data=data, layout=layout)
 
-    po.plot(fig, filename=file_name)
+    camera = dict(
+        up=dict(x=0, y=0, z=1),
+        center=dict(x=0, y=0, z=-0.5),
+        eye=dict(x=1.6, y=-0.1, z=0.3)
+    )
+    fig.update_layout(scene_camera=camera)
+    file_name = 'Sz_landscape_{}.html'.format(colorbar_title)
+    path_to_fig = os.path.join(platform_id.figure_dir(), file_name)
+    p_io.write_html(fig, path_to_fig, auto_open=False)
+    print("wrote fig at : {}".format(path_to_fig))
+
+    for ext in ["svg", "pdf"]:
+        file_name = 'Sz_landscape_{}.{}'.format(colorbar_title, ext)
+        path_to_fig = os.path.join(platform_id.figure_dir(), file_name)
+        fig.write_image(path_to_fig)
+        print("wrote fig at : {}".format(path_to_fig))
+
+    # po.plot(fig, filename=file_name)
 
 
 # DEPRECATED ===========

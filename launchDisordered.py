@@ -1,24 +1,18 @@
 #!/usr/bin/env python3
 # launchDisordered.py
-# Creates VASP imput files for vasp in the folder projectName/jobFformula
+"""Creates VASP input files in the folder projectName/jobFformula"""
 
 
-# import sys
 import json
 import os
-# import subprocess
-# import shutil
 import time
 from itertools import chain
 from multiprocessing import Pool, cpu_count
 
 import numpy as np
 from pymatgen import Structure
-# from pymatgen.io.vasp.inputs import Incar
-# from pymatgen.core.composition import Composition
 from pymatgen.core.periodic_table import Element
-from pymatgen.io.vasp.sets import \
-    MPRelaxSet  # , MVLRelax52Set  # , MPStaticSet
+from pymatgen.io.vasp.sets import MPRelaxSet
 
 import createStructureList as create_list
 import readRun_entries as read
@@ -34,15 +28,18 @@ class Job(MPRelaxSet):
 
     @property
     def structure(self):
+        """Bypass (overload) structure access restricted in pmg.MPRelaxSet"""
         return self._structure
 
     @structure.setter
     def structure(self, value):
+        """"Bypass (overload) structure modification restricted in pmg.MPRelaxSet"""
         self._structure = value
 
     def __init__(self, structure, entry_id,
                  user_param=None, user_incar=None,
                  job_folder="", **kwargs):
+        """Generates a runDict from a Computed entry if it is none None"""
 
         # super().__init__(structure)
         self.explicit_jobpath = False
@@ -74,7 +71,9 @@ class Job(MPRelaxSet):
     #     del self.structure
 
     def get_nametag(self):
-        " name_tag : get name of the current structure in a string nameTag"
+        """set composition, nb_cell & x_na tags
+        using a normalized composition (AxByO2)"""
+
         self.nb_cell = read.get_nb_cell(self.structure)
 
         # Normalizing composition to get Nax My O2
@@ -82,12 +81,21 @@ class Job(MPRelaxSet):
             self.structure, self.nb_cell)
 
     def set_job_name(self):
+        """ Set the name of the job
+        Normalized composition (AxByO2) + '__' + custom "id" string"""
+
         self.get_nametag()
         self.job_name = self.formula + "__" + self.entry_id
         self.job_name = self.job_name.replace(' ', '-').replace('.', '')
         return self.job_name
 
     def set_job_folder(self, parent_path, explicit_jobpath=None):
+        """ Set the folder in which Input files will be written
+
+            By default, the parent path is extended with specific Jobname
+            if explicit_jobpath=True, only the parent Path is used
+            Usefull when creating Job-specific resuns (eg. COOP, fukui)
+        """
         if explicit_jobpath is not None:
             self.explicit_jobpath = explicit_jobpath
         self.set_job_name()
@@ -126,12 +134,14 @@ class Job(MPRelaxSet):
                 json.dump(self.user_param, outfile)
 
     def copy(self):
+        """ Duplicate an existing Job (deepcopy)"""
         return(Job(self.structure.copy(), self.entry_id,
                    user_param=dict(self.user_param),
                    user_incar=dict(self.user_incar),
                    job_folder=self.job_folder))
 
     def copy_w_new_struct(self, structure, new_id="", id_mode="add"):
+        """ Duplicate an existing Job with a custom structure"""
         id_str = ""
         if id_mode in ["add", "a", "A"]:
             id_str += self.entry_id
@@ -144,6 +154,10 @@ class Job(MPRelaxSet):
 
     @classmethod
     def from_rundict(cls, rundict, new_folder=None):
+        """ Generates a PRE-runs from an existing POST-run
+
+        useful when re-runing with modified parameters"""
+
         job = Job(rundict.structure, rundict.str_id,
                   user_param=dict(rundict.parameters.get('custom', {})),
                   user_incar=dict(rundict.parameters['incar']),
@@ -155,6 +169,7 @@ class Job(MPRelaxSet):
 
 
 def default_incar():
+    """return a dict with usual Incar parameters"""
 
     incar_default = {
         'SYSTEM': 'honeycomb',
@@ -186,10 +201,9 @@ def default_incar():
 
 
 def get_pristine_list(structure_files, cif_folder, is_poscar=False):
-    os.chdir(cif_folder)
+    """Read the structure files and generate a list of corresponding Job instances"""
 
-    # LIST OF PRISTINE_STRUC (fct of CIF_NAME list)
-    # ===================================
+    os.chdir(cif_folder)
     pristine_job_list = []
     for file_name in structure_files:
         if is_poscar:
@@ -209,6 +223,8 @@ def get_pristine_list(structure_files, cif_folder, is_poscar=False):
 
 def get_structure_list_wrapper(pristine_structure_list,
                                launch_choice):
+    """ Modifies the as-read ("pristine") structures without optional arguments
+        to make it compatible with parallel-threading """
 
     return(get_complete_structure_list(pristine_structure_list,
                                        launch_choice=launch_choice))
@@ -217,12 +233,12 @@ def get_structure_list_wrapper(pristine_structure_list,
 def get_complete_structure_list(
         pristine_job_list,
         launch_choice=None,
-        parameter=["Na+"]):
+        parameter=None):
+    """ Modifies the as-read ("pristine") structures
 
-    # LIST OF {PMG.STRUCTURES/ID} (fct of PRISTINE_STRUCT list)
-    # ==================================
-    # data structure : list of dict { 'structure' : pmg.struct , "id" : string
-    # }
+    Input : list of Job (read from pristine files)
+    launch choice : Type of modification of the structure list"""
+
     choice_dict = {
         "s": "[s]imple",
         "d": "[d]esodiation_tree",
@@ -311,22 +327,23 @@ def get_complete_structure_list(
 
 
 def adjust_incar(job_list, incar_setting=None,
-                 VdW=None, perturb=None):
-    incar_out = incar_setting if incar_setting is not None else {}
-    if VdW is None:
-        VdW = True if input(
-            "\n Van Der Waals ? Y / N   :   ") == "Y" else False
+                 v_d_w=None, perturb=None):
+    "Add VdW flags in INCAR and random perturbation of atom position"
 
-    if VdW:
+    incar_out = {} if incar_setting is None else incar_setting
+    if v_d_w is None:
+        v_d_w = bool(input("Van Der Waals ? Y / N : ") == "Y")
+
+    if v_d_w:
         incar_out['IVDW'] = 12
 
     if perturb is None:
         try:
             perturb = float(
                 input('Perturb the initial position of atoms ? in Angstrom '))
-            assert (perturb > 0), "No perturbation"
-        except AssertionError as msg:
-            print(msg)
+            assert (perturb > 0), "Perturbation must be > 0"
+        except (AssertionError, ValueError) as msg:
+            print(msg, "default to No perturbation")
             perturb = 0
 
     for job in job_list:
@@ -339,10 +356,7 @@ def adjust_incar(job_list, incar_setting=None,
 def generate_job_folders(final_job_list,
                          parent_folder, project_name,
                          selective_dynamic=None):
-
-    # LIST OF JOB FOLDER (fct of VASP_INPUT_SET list)
-    # ====================================================
-    # Search and create a new directory for the project
+    "Search and create a new parent dir and individual jobs dirs"
 
     project_dir = read.get_file_name(parent_folder, project_name, ext="")
 
@@ -353,23 +367,17 @@ def generate_job_folders(final_job_list,
     if selective_dynamic not in [None, "False"]:
         make_selective_dynamic(final_job_list, selective_dynamic)
 
-        # if fukui is not None :
-        #     inc = vasp_input.incar
-        #     inc["NELECT"] =  vasp_input.nelect + fukui
-        #     pos.write_file(folder_name+"/INCAR")
-
     for job in final_job_list:
         job.set_job_folder(project_dir)
         job.write_data_input()
 
         print("set written in {}".format(job.job_folder))
 
-    # folder_list += []
-
     return folder_list
 
 
 def make_selective_dynamic(final_job_list, selective_dynamic):
+    "select atoms (and directions) to be frozen "
     print("all sites are allowed to move")
     for job in final_job_list:
         print(job.job_name)
@@ -404,11 +412,9 @@ def make_selective_dynamic(final_job_list, selective_dynamic):
 
 
 def main():
+    "Select valid structure file in folder and generate corresponding VASP input folders"
 
     print("ALL RIGHT ! READY TO ROCK ! \n \n" + time.asctime() + "\n  \n")
-
-    # incar_default = default_incar()
-
     # cif_list=["Na2MnO3_mp-769949_symmetrized.cif"]
     project_name = "new_project"
     parent_dir = "/home/jvergnet/frofro/Cu_phase/CuX1_2/"
@@ -440,11 +446,10 @@ def main():
     if len(file_list) > 0:
         print("found {} \n ".format(file_list))
         try:
-            assert input("Work with these files ? Y/N")[0] in ["Y", "y"], \
-                "pass"
-            pristine_job_list = get_pristine_list(
-                file_list, cif_folder, is_poscar=True)
-        except AssertionError:
+            if input("Work with these files ? Y/N")[0] in ["Y", "y"]:
+                pristine_job_list = get_pristine_list(
+                    file_list, cif_folder, is_poscar=True)
+        except ValueError:
             pristine_job_list = []
 
     elif input("Browse existing runs in subfolder ? Y/N") == "Y":
@@ -471,7 +476,7 @@ def main():
         pristine_job_list)
 
     adjust_incar(job_list, incar_setting={},
-                 VdW=None, perturb=None)
+                 v_d_w=None, perturb=None)
 
     if input("create run folders in CWD ? Y/N") == "Y":
         parent_dir = cwd
@@ -484,6 +489,11 @@ def main():
 
 
 def substitution_desodiation_p2_p3():
+    """takes a list of structures with Mg
+    substitute Mg for Na, Li, Zn and Ca
+    remove Na using iterative madelung algorithm
+    Return a list of all substitued & desodiated structures
+    """
     # Set the parameters ofthe run
     # parent_dir = "/home/jvergnet/frofro/honeycomb/"
     project_name = "substitued"
@@ -561,7 +571,7 @@ def substitution_desodiation_p2_p3():
             #                                    incar_default,
             #                                    VdW=True, scan=False)
             adjust_incar(final_job_list, incar_setting={},
-                         VdW=None, perturb=None)
+                         v_d_w=None, perturb=None)
             generate_job_folders(final_job_list, specie_dir,
                                  specie_stacking['id'])
 
@@ -571,6 +581,11 @@ def substitution_desodiation_p2_p3():
 
 
 def multi_distortion_desodiation_scan():
+    """takes a list of structures with Mg
+        remove Na using iterative madelung algorithm
+        create a trigonal-prismatic distortion on all MnO6 octa
+        Return a list of all desodiated & distorted structures
+    """
     cluster = True
 
     incar_static = default_incar()
@@ -647,7 +662,7 @@ def multi_distortion_desodiation_scan():
         # , name_format="sulfide")
 
         adjust_incar(final_job_list, incar_setting={},
-                     VdW=None, perturb=None)
+                     v_d_w=None, perturb=None)
 
         generate_job_folders(final_job_list,
                              project_dir, specie_stacking['id'],

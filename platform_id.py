@@ -20,6 +20,10 @@ def setting_dir():
     return(os.path.join(local_cluster_dir(), "settings"))
 
 
+def figure_dir():
+    return(os.path.join(local_cluster_dir(), "figures"))
+
+
 def running_on_cluster():
     # Check if we are on frodon
     cluster_names = ['frodon.lsd.univ-montp2.fr',

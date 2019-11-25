@@ -36,15 +36,18 @@ def filter_loop(run_list_all, input_graph_type=None, allow_filtering=True):
     continue_filter_loop = True
 
     while continue_filter_loop:
-
-        restricted_runs = filter_runs.restrict_run_list(run_list_all) \
+        x_coord = filter_runs.select_x_coord()
+        restricted_runs = filter_runs.restrict_run_list(
+            run_list_all, x_coord) \
             if allow_filtering else run_list_all
 
         print("nb runs : {}".format(len(restricted_runs)))
         if len(restricted_runs) == 0:
             print("no enough runs ! ")
         else:
-            plot_loop(restricted_runs, input_graph_type)
+            plot_loop(restricted_runs,
+                      input_graph_type=input_graph_type,
+                      x_coord=x_coord)
 
         if allow_filtering is False or input(
                 "Continue plotting with different filter ? [Y/n]") != "Y":
@@ -53,7 +56,7 @@ def filter_loop(run_list_all, input_graph_type=None, allow_filtering=True):
     return True
 
 
-def plot_loop(restricted_runs, input_graph_type=None):
+def plot_loop(restricted_runs, input_graph_type=None, x_coord="x_na"):
     " loop to draw several plot on a fixed dataset "
 
     looping_mode = True
@@ -78,7 +81,8 @@ def plot_loop(restricted_runs, input_graph_type=None):
         if looping_mode:
             graph_type = ask_graph_type()
 
-        continue_loop = single_analysis_routine(graph_type, restricted_runs,
+        continue_loop = single_analysis_routine(restricted_runs,
+                                                graph_type, x_coord,
                                                 chem_env_done, bader_done,)
 
         # looping ONLY if initial input is undefined AND user want another graph
@@ -86,7 +90,7 @@ def plot_loop(restricted_runs, input_graph_type=None):
             break
 
 
-def single_analysis_routine(graph_type, restricted_runs, chem_env_done, bader_done):
+def single_analysis_routine(rundict_list, graph_type, x_coord, chem_env_done, bader_done):
     """
     chose & perform a single analysis routine
     catch exceptions and reload modules if necessary
@@ -96,41 +100,45 @@ def single_analysis_routine(graph_type, restricted_runs, chem_env_done, bader_do
     try:
         if graph_type == 'Structure':
             bailar.plot_structure_graphs(
-                restricted_runs, chem_env_done)
+                rundict_list, chem_env_done)
 
         elif graph_type == 'XRD':
             print("Not implemented yet")
 
         elif graph_type == 'Bader':
             if bader_done:
-                bader.plot_charge_and_mag(restricted_runs)
+                bader.plot_charge_and_mag(rundict_list)
             else:
                 print("Generate bader tags before plotting !!")
 
         elif graph_type == 'COOP':
             sorting = "oxidation" if bader_done else "OO_pairs"
-            restricted_runs = lob.plot_COOP_OO(
-                restricted_runs, sorting=sorting)
+            rundict_list = lob.plot_COOP_OO(
+                rundict_list, sorting=sorting)
 
         elif graph_type == "O2 release":
-            restricted_runs = O2.O2_computation(
-                restricted_runs, bader_done=bader_done)
+            rundict_list = O2.O2_computation(
+                rundict_list, bader_done=bader_done)
 
         elif graph_type == "DOS":
-            DOS.plot_DOS_graphs(restricted_runs)
+            DOS.plot_DOS_graphs(rundict_list)
 
         elif graph_type == 'hull':
-            if len([d for d in restricted_runs if d.status >= 3]) >= 2:
-                hull.plot_hull_graphs(restricted_runs)
+            if len([d for d in rundict_list if d.status >= 3]) >= 2:
+                hull.plot_hull_graphs(rundict_list, coord=x_coord)
             else:
                 print("not enough converged runs to perform further analysis")
 
         elif graph_type == "energy surface":
             PES.plot_energy_surface_graphs(
-                restricted_runs, chem_env_done)
+                rundict_list, chem_env_done)
 
         elif graph_type == "mag":
-            nupdown.plot_all_graphs(restricted_runs)
+            nupdown.plot_all_graphs(rundict_list)
+
+        elif graph_type == "debug_infos":
+            print("=== debug output ===")
+            print_debug(rundict_list)
 
         elif graph_type == "reload":
             print("normal reload")
@@ -181,6 +189,7 @@ GRAPH_OPTION = [
     "energy surface",
     "mag",
     "reload",
+    "debug_infos",
     "QUIT"]
 
 
@@ -201,6 +210,13 @@ def ask_graph_type(graph_type=None):
                     "type C to [C]ontinue plotting or anything else to QUIT") != "C":
                 graph_type = "QUIT"
     return graph_type
+
+
+def print_debug(rundict_list):
+    "print all information of each run"
+    for rundict in rundict_list:
+        print("\n\n")
+        print(rundict.as_dict())
 
 
 def main():
