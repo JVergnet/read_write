@@ -21,6 +21,7 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 import platform_id
 import structure_geometry_utils as cluster
+import nupdown_scan as nupdown
 
 global PARAM
 
@@ -109,12 +110,18 @@ class Rundict(ComputedStructureEntry):
             self.MMOO_quadruplets = None
             self.bader_done = False
             # self.structure_data = self.structure
+            self._mag = None
 
         self.generate_tags()
 
     @property
     def nelect(self):
-        return self.parameters["incar"].get('NELECT', 0)
+        nelect = self.parameters["incar"].get('NELECT', None)
+        if nelect is None:
+            print("NELECT not defined, returning 0")
+            return 0
+
+        return nelect
 
     @property
     def name_tag(self):
@@ -123,19 +130,13 @@ class Rundict(ComputedStructureEntry):
 
     @property
     def mag(self):
-        if not hasattr(self, '_mag'):
-            self._mag = None
-            try:
-                mag_tot = Oszicar(os.path.join(
-                    self.job_folder, "OSZICAR")).ionic_steps[-1]["mag"]
-                self._mag = mag_tot / \
-                    len(self.structure.indices_from_symbol("Mn"))
-            except Exception:
-                print("could not define mag for", self.name_tag)
+        "lazy parsing of the oszicar"
+        if self._mag is None:
+            self._mag = nupdown.get_mag_single(self)
         return self._mag
 
     def generate_tags(self):
-        " progressively generates tags & attributes depending on the convergence "
+        " incrementally generates tags & attributes depending on the convergence "
         if self.status == 0:
             return "{} Not a job folder".format(self.job_folder)
         if self.status > 0:  # pre-run : just the structure

@@ -2,6 +2,7 @@
 """ Plots 2D heatmaps (svg) and 3d surfaces (html) from abstract run data"""
 # from multiprocessing import Pool, cpu_count
 
+import math
 import os
 
 # import matplotlib.cm as cm
@@ -10,6 +11,8 @@ import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 # generric libraries
 import numpy as np
+from mpl_toolkits.axes_grid1 import AxesGrid
+from pymatgen.io.vasp.outputs import Oszicar  # Outcar
 # pymatgen libraries
 # from pymatgen.io.vasp.outputs import Oszicar
 from scipy.interpolate import griddata
@@ -29,16 +32,17 @@ try:
     import plotly.graph_objects as go
     import plotly.io as p_io
     # from plotly import tools
-    plotly_available = True
+    PLOTLY_OK = True
 except Exception as ex:
     print(ex)
-    plotly_available = False
+    PLOTLY_OK = False
 
 # === MAIN FUNCTION ===========
 
 
 def plot_all_graphs(rundict_list, nupdown=None, nelect=None):
-    g_plot.set_mpl_rc_params()
+    "determine which graph to plot (nelect or nupdown, 2D or 3D)"
+    g_plot.set_mpl_rc_params_paper()
     plot_choice = {}
     for param, param_str in zip([nupdown, nelect], ['nupdown', 'nelect']):
         if param is None:
@@ -56,12 +60,10 @@ def plot_all_graphs(rundict_list, nupdown=None, nelect=None):
     if plot_choice['nupdown']:
         selected_runs = prepare_nupdown_data(rundict_list)
         if input("Plot mag 3d surface ? [Y]") in ["Y", "y"]:
-            colorcode = "O_mag" if input("colorcode ? O_mag ") == "Y" \
-                else "energy"
-            plot_mag_surface(selected_runs, colorcode=colorcode)
+            plot_mag_surface(selected_runs)
 
         if input("Plot mag heatmap ? [Y]") in ["Y", "y"]:
-            selected_runs = [s for s in selected_runs if s["x_na"] > 0.28]
+            # selected_runs = [s for s in selected_runs if s["x_na"] > 0.28]
             plot_mag_heatmap(selected_runs)
 
     if plot_choice['nelect']:
@@ -70,9 +72,23 @@ def plot_all_graphs(rundict_list, nupdown=None, nelect=None):
 
 
 # === GETTING DATA =============
+def get_mag_single(rundict):
+    """get magnetization from the oszicar for a given rundict
+    return np.nan if parsing failed  """
+    try:
+        mag_tot = Oszicar(os.path.join(
+            rundict.job_folder, "OSZICAR")).ionic_steps[-1]["mag"]
+        return mag_tot / len(rundict.structure.indices_from_symbol("Mn"))
+    except Exception:
+        print("could not define mag for", rundict.name_tag)
+        return np.nan
 
 
 def prepare_nupdown_data(rundict_list):
+    """filter the rundict list
+     select only the most stable structure for each X/Y coordinate (x_na, mag)
+
+     usefull when merging several stackings (P2/O2) to build a surface"""
 
     sorted_runs = sorted(rundict_list,
                          key=lambda k: (k.x_na, k.mag, k.energy_per_fu))
@@ -90,6 +106,7 @@ def prepare_nupdown_data(rundict_list):
 def build_x_y_e(rundict_list, attr_x, attr_y):
     """
     build a X / Y / E array to be plotted
+
     define a vertical slice (constant X) : all structure with same NELECT (x axis)
     scale to zero energy the bottom of each slice
     """
@@ -163,9 +180,11 @@ def interp_xye(x_y_z):
     # print( XYE[:,2])
     interp_e = griddata(x_y_z[:, 0:2], x_y_z[:, 2],
                         (grid_x, grid_y), method='cubic')
-    min_e = np.nan_to_num(interp_e).min()
-    max_e = np.nan_to_num(interp_e).max()
-    # interp_e = interp_e - min_e
+    interp_nice = interp_e[~np.isnan(interp_e)]
+    min_e = interp_nice.min()
+    max_e = interp_nice.max()
+    print("surface offset by {}".format(min_e))
+    interp_e = interp_e - min_e
     print("min E {:.4f} , max E {:.4f}".format(min_e, max_e))
     return grid_x, grid_y, interp_e
 
@@ -266,35 +285,69 @@ def plot_abstract_heatmap(rundict_list, attr_x="nelect", attr_y="doo", bader_lan
                                     attr_z_func=attr_z_func)
             except AssertionError as ex:
                 # the assert in "build_x_y_c" check that bader data is present
-                # if raised, we do not plot the axe
+                # if raised, we do not plot the corresponding bader plot
                 print(ex)
             else:
-                plot_title = 'Landscape_{}_of_{}_{}'.format(
+                plot_title = '{}_of_{}_{}'.format(
                     short_2_long[attr_z_func], specie, attr_z)
                 plot_data.append(
                     {"title": plot_title, "data": x_y_c, "cmap": cmap})
 
     nb_plots = len(plot_data)
-    fig = plt.figure("2D_landscapes", figsize=(7*nb_plots, 7))
-    axe = fig.add_subplot(1, nb_plots, 1)
+    fig = plt.figure(num="2D_landscapes", figsize=(6*nb_plots, 7))
+    # fig, axes = plt.subplots(1, nb_plots, num="2D_landscapes",
+    #                          figsize=(7*nb_plots, 7),
+    #                          # constrained_layout=True
+    #                          )
+    # import matplotlib.gridspec as gridspec
+
+    # gs = gridspec.GridSpec(1, 2*nb_plots,
+    #                        width_ratios=np.hstack(
+    #                            [[10, 1] for _ in range(nb_plots)]))
+
+    grid = AxesGrid(fig, 111,  # similar to subplot(143)
+                    nrows_ncols=(1, nb_plots),
+                    axes_pad=1,
+                    label_mode="all",
+                    share_all=True,
+                    cbar_location="right",
+                    cbar_mode="each",
+                    cbar_size="5%",
+                    cbar_pad="3%",
+                    )
+
     data_dict = plot_data[0]
-    plot_energy_landscape(data_dict["data"], fig, axe,
+    plot_energy_landscape(data_dict["data"],
+                          grid[0], grid.cbar_axes[0],
                           attr_x=attr_x, attr_y=attr_y,
                           plot_title=data_dict["title"],
                           cmap=data_dict["cmap"])
 
     for (j, data_dict) in enumerate(plot_data[1:]):
-        axe = fig.add_subplot(1, nb_plots, j+2)
-        plot_charge_landscape(data_dict["data"], fig, axe,
+        plot_charge_landscape(data_dict["data"],
+                              grid[j+1], grid.cbar_axes[j+1],
                               attr_x=attr_x, attr_y=attr_y,
                               plot_title=data_dict["title"],
                               cmap=data_dict["cmap"])
+
+    plt.subplots_adjust(wspace=0.4)
 
     fig.tight_layout()
     plt.show(block=False)
 
 
-def plot_energy_landscape(x_y_e, fig, axe, attr_x="nelect", attr_y="doo", plot_title="", cmap='coolwarm'):
+def colorbar(ax, mappable):
+    "mappable = artist such as plot or heatmap or scatter"
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    # ax = mappable.axes
+    fig = ax.figure
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad="3%")
+    return fig.colorbar(mappable, cax=cax)
+
+
+def plot_energy_landscape(x_y_e,  axe, cbar_axe, attr_x="nelect", attr_y="doo",
+                          plot_title=None, cmap='coolwarm'):
     " plot energy heatmap using abstract attributes for x and y"
 
     # interpolation of the grid of computed points
@@ -302,10 +355,9 @@ def plot_energy_landscape(x_y_e, fig, axe, attr_x="nelect", attr_y="doo", plot_t
     # surface_color = interp_e
     # colorbar_title = "Energy"
 
-    bounds = np.linspace(0, 3000, num=16, endpoint=True)
-    interp_nice = interp_e[~np.isnan(interp_e)]
-    bounds = np.linspace(
-        interp_nice.min(), interp_nice.max()/2, num=41, endpoint=True)
+    # bounds = np.linspace(0, 3000, num=16, endpoint=True)
+    max_e, ticks = find_E_max(interp_e)
+    bounds = np.linspace(0, max_e, num=41, endpoint=True)
 
     norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
     e_img = axe.contourf(grid_x,
@@ -320,24 +372,42 @@ def plot_energy_landscape(x_y_e, fig, axe, attr_x="nelect", attr_y="doo", plot_t
 
     axe.scatter(x_y_e[:, 0], x_y_e[:, 1], c="black", marker="+",
                 s=30, label="computed structures",
-                alpha=0.3)
+                alpha=0.2)
     # cbar = \
-    fig.colorbar(e_img, ax=axe)
+    cbar_axe.colorbar(e_img, ticks=ticks)
     #  ,  norm=colors.PowerNorm(gamma=1./3.) ) //,
     # axes[-1].imshow(interp_E, extent=(np.amin(x), np.amax(x), np.amin(y), np.amax(y)),
     #                             cmap=cm.jet) #, norm=LogNorm())
 
-    # contours = plt.contour(E_img, levels=[25],colors='r' )
-    # plt.clabel(E_img, [25], inline=True, fmt=["25 meV"], fontsize=10)
+    # plt.contour(e_img, levels=[25], colors='r')
+    # plt.clabel(e_img, [25], inline=True, fmt=["25 meV"], fontsize=10)
     # Add the contour line levels to the colorbar
     # cbar.add_lines(contours)
 
     axe.set_xlabel(attr_x)
-    axe.set_ylabel(attr_y)
-    axe.title.set_text('Energy landscape')
+    # axe.set_ylabel(attr_y)
+    # instead of y_label
+    axe.text(0, 1, attr_y, transform=axe.transAxes,
+             fontsize=10, va='top', ha='right')
+    title_string = 'Energy landscape' if plot_title is None else plot_title
+    axe.title.set_text(title_string)
 
 
-def plot_charge_landscape(x_y_c, fig, axe,
+def find_E_max(interp_e):
+    """Find a nice value for E max (avoid absurdly high energies)
+
+    take 75th percentile then round to nearest power of 10"""
+    interp_nice = interp_e[~np.isnan(interp_e)]
+
+    max_e = np.percentile(interp_nice.flatten(), 75)
+    nb_digits = math.floor(math.log10(max_e))
+    max_e_nice = round(max_e, -nb_digits)
+    ticks = np.linspace(0, max_e_nice, num=(
+        max_e_nice / 10**nb_digits+1), endpoint=True)
+    return max_e_nice, ticks
+
+
+def plot_charge_landscape(x_y_c, axe, cbar_axe,
                           attr_x="nelect", attr_y="doo",
                           plot_title="", cmap='Reds'):
     " plot charge heatmap using abstract attributes for x and y"
@@ -368,9 +438,10 @@ def plot_charge_landscape(x_y_c, fig, axe,
 
     axe.scatter(x_y_c[:, 0], x_y_c[:, 1], c="black", marker="+",
                 s=30, label="computed structures",
-                alpha=0.3)
+                alpha=0.2)
     # cbar =  \
-    fig.colorbar(c_img, ax=axe)
+    cbar_axe.colorbar(c_img)
+    # fig.colorbar(c_img, ax=axe)
     #  ,  norm=colors.PowerNorm(gamma=1./3.) ) //,
     # axes[-1].imshow(interp_E, extent=(np.amin(x), np.amax(x), np.amin(y), np.amax(y)),
     #                             cmap=cm.jet) #, norm=LogNorm())
@@ -388,9 +459,9 @@ def plot_charge_landscape(x_y_c, fig, axe,
 
 
 # === PLOTLY REQUIRED
-def plot_mag_surface(rundict_list, colorcode="O_mag", attr_x="x_na", attr_y="mag"):
-
-    if not plotly_available:
+def plot_mag_surface(rundict_list, attr_x="x_na", attr_y="mag"):
+    "generate a 3D plot in HTML of the mag surface"
+    if not PLOTLY_OK:
         print("plotly could not be imported, \n 3D plots not available")
         return False
 
@@ -423,20 +494,15 @@ def plot_mag_surface(rundict_list, colorcode="O_mag", attr_x="x_na", attr_y="mag
         colorbar_title = "Energy"
 
     # defining text on hover
-    textz = [
-        ["".join([
-            'x_na: {:0.2f}'.format(grid_x[i][j]),
-            '<br>Sz: {:0.2f}'.format(grid_y[i][j]),
-            '<br>E: {:0.5f}'.format(interp_e[i][j]),
-            '<br>{}: {:0.5f}'.format(
-                colorbar_title, surface_color[i][j])
-        ])
+    textz = [["".join([
+        'x_na: {:0.2f}'.format(grid_x[i][j]),
+        '<br>Sz: {:0.2f}'.format(grid_y[i][j]),
+        '<br>E: {:0.5f}'.format(interp_e[i][j]),
+        '<br>{}: {:0.5f}'.format(colorbar_title, surface_color[i][j])
+    ])
 
-            for j in range(grid_x.shape[1])
-        ]
-
-        for i in range(grid_x.shape[0])
-    ]
+        for j in range(grid_x.shape[1])]
+        for i in range(grid_x.shape[0])]
     # main surface with colors
     data_surface = go.Surface(
         x=grid_x,
@@ -459,8 +525,8 @@ def plot_mag_surface(rundict_list, colorcode="O_mag", attr_x="x_na", attr_y="mag
                "start": 25,
                "size": 100,
                "color": 'rgb(111,151,255)',
-                "width": 1,
-                "highlight": False}
+               "width": 1,
+               "highlight": False}
         ),
         lighting=dict(
             ambient=0.8,  # 0.8,

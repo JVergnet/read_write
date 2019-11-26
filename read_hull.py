@@ -39,11 +39,15 @@ def generate_hull_entries(run_list, remove_extremes=False, coord="x_na"):
     # voltage = []
 
     clean_entries = []
-    current_Na = -1
+    current_x = -1000000
     for entry in sorted_entries:
-        if getattr(entry, coord) > current_Na:
+        if getattr(entry, coord) > current_x:
             clean_entries.append(entry)
-            current_Na = getattr(entry, coord)
+            current_x = getattr(entry, coord)
+
+    for entry in clean_entries:
+        entry.status = 4
+
     #       print(entry)
     # print(clean_entries)
     # [print([r.x_na for r in L])
@@ -93,9 +97,6 @@ def generate_hull_entries(run_list, remove_extremes=False, coord="x_na"):
         current_index = next_index
         hull_entries.append(clean_entries[current_index])
 
-    for entry in clean_entries:
-        entry.status = 4
-
     for entry in hull_entries:
         entry.status = 5
 
@@ -117,9 +118,12 @@ def plot_hull_graphs(sorted_entries, coord="x_na", **kwargs):
     if "simple_energy_graph" in kwargs.keys():
         simple_energy_graph = kwargs["simple_energy_graph"]
     else:
-        simple_energy_graph = True if \
-            input("plot simple energy graph ? [Y/N]")[0] == "Y" \
-            else False
+        try:
+            choice = input("plot simple energy graph ? [Y/N]")
+            assert len(choice) > 0, "default to false"
+            simple_energy_graph = bool(choice[0] == "Y")
+        except Exception:
+            simple_energy_graph = False
 
     if simple_energy_graph:
         sorted_converged_entries = sorted(
@@ -141,7 +145,7 @@ def plot_hull_graphs(sorted_entries, coord="x_na", **kwargs):
             hull = bool(input(string) == "Y")
 
         if hull:
-            sorted_entries = generate_hull_entries(sorted_entries)
+            sorted_entries = generate_hull_entries(sorted_entries, coord=coord)
             converged_entries = [d for d in sorted_entries if d.status >= 3]
             hull_entries = [d for d in sorted_entries if d.status >= 5]
             plot_convex_hull(converged_entries, coord=coord)
@@ -161,20 +165,24 @@ def plot_convex_hull(sorted_entries, coord='x_na'):
     clean_entries = [d for d in sorted_entries if d.status >= 4]
     hull_entries = [d for d in sorted_entries if d.status >= 5]
 
-    stacking_list = {e.stacking for e in sorted_entries}
+    #  int => stacking string
+    stacking_list = list({e.stacking for e in sorted_entries})
+    print("stacking set : ", stacking_list)
 
-    print("stacking list : ", stacking_list)
+    # stacking string => int
+    stacking_index = {s: i for i, s in enumerate(stacking_list)}
+    print("stacking index : ", stacking_index)
 
-    # [(1,0,0,1),(0,0,1,1),(0,1,0,1)]
     colors = ['green', 'red', 'blue', 'black']
 
+    # stacking string => color
     color_dict = {}
     for i, stacking in enumerate(stacking_list):
         color_dict[stacking] = colors[i]
     print(color_dict)
-    specific_color_dict = {"P3": "#b700ffff",
-                           "O3": "#00baffff"}
-    color_dict.update(specific_color_dict)
+    color_dict.update({"P3": "#b700ffff",
+                       "O3": "#00baffff"})
+
     plot_title = "Convex Hull"
 
     fig = plt.figure(plot_title)
@@ -193,16 +201,16 @@ def plot_convex_hull(sorted_entries, coord='x_na'):
 
     if True:  # input("add error bars for ambient temp ? [Y/N] ")=="Y" :
         thermal_error = 25  # in meV
-        XE1 = np.array([[getattr(e, coord), e.eform] for e in clean_entries])
+        x_e_1 = np.array([[getattr(e, coord), e.eform] for e in clean_entries])
         # print(XE1)
-        X_clean = XE1[:, 0]
-        E_clean = XE1[:, 1]
+        x_clean = x_e_1[:, 0]
+        e_clean = x_e_1[:, 1]
         yerr_down = [(thermal_error if (e.status < 4) else 0)
                      for e in clean_entries]
-        yerr_up = thermal_error * np.ones_like(E_clean)
+        yerr_up = thermal_error * np.ones_like(e_clean)
         # print([yerr_down, yerr_up])
         axe.errorbar(
-            X_clean, E_clean,
+            x_clean, e_clean,
             yerr=[yerr_down, yerr_up],
             fmt='',
             linestyle="None")
@@ -212,12 +220,14 @@ def plot_convex_hull(sorted_entries, coord='x_na'):
         try:
             print(entry.eform)
         except Exception as ex:
-            print("Exception raised for {} : {}".format(entry.nameTag, ex))
+            print("Exception raised for {} : {}".format(entry.name_tag, ex))
     for stacking in stacking_list:
         print("current stacking", stacking)
         x_e = np.array([[getattr(entry, coord), entry.eform]
                         for entry in sorted_entries
                         if entry.stacking == stacking])
+
+        print(x_e)
         axe.scatter(
             x_e[:, 0], x_e[:, 1], s=dot_size,
             facecolors='none',
@@ -228,15 +238,18 @@ def plot_convex_hull(sorted_entries, coord='x_na'):
 
     x_e_c = np.array([[getattr(entry, coord),
                        entry.eform,
-                       color_dict[entry.stacking]]
+                       stacking_index[entry.stacking]]
                       for entry in clean_entries])
-    # print(E)
+    print(x_e_c)
     axe.scatter(x_e_c[:, 0], x_e_c[:, 1], s=dot_size,
-                color=x_e_c[:, 2], edgecolor='face')
+                color=[color_dict[stacking_list[int(index)]]
+                       for index in x_e_c[:, 2]],
+                edgecolor='face')
 
     # link entries on the convex hull (black line) [hull_entries]
     x_e = np.array([[getattr(entry, coord), entry.eform]
                     for entry in hull_entries])
+    print(x_e)
     axe.plot(x_e[:, 0], x_e[:, 1], "k-")
 
     axe.legend()
@@ -244,7 +257,8 @@ def plot_convex_hull(sorted_entries, coord='x_na'):
     axe.set_xlabel('Na content'
                    )
     # X = [getattr(entry, coord) for entry in sorted_entries]
-    axe.invert_xaxis()
+    if coord == "x_na":
+        axe.invert_xaxis()
     # axe.tick_params(axis='x', which='minor', bottom=True)
     axe.xaxis.set_minor_locator(AutoMinorLocator(n=2))
     # xlim(max(X), min(X))
@@ -252,7 +266,7 @@ def plot_convex_hull(sorted_entries, coord='x_na'):
     plt.show(block=False)
     generic_plot.save_fig(fig, plot_title)
 
-    return(fig)
+    return fig
 
 
 def plot_voltage_curve(hull_entries):
