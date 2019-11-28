@@ -3,8 +3,7 @@
 
 import traceback
 
-
-import post_run_analysis.read_hull as hull
+import electronic_analysis.read_hull as hull
 
 
 def restrict_run_list(all_runs_input, x_coord):

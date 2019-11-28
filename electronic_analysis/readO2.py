@@ -11,7 +11,7 @@ from operator import itemgetter
 from pymatgen.io.vasp.outputs import Oszicar
 
 import launchDisordered as launch
-import readRun_entries as read
+import electronic_analysis.readRun_entries as read
 import utils.generic_plot as generic_plot
 import utils.platform_id as platform_id
 

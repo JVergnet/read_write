@@ -8,18 +8,18 @@ import traceback
 import matplotlib
 import matplotlib.pyplot as plt
 
-import post_run_analysis.energy_surface as PES
-import post_run_analysis.read_bader as bader
-import post_run_analysis.read_cohp as lob
-import post_run_analysis.read_dos as DOS
-import post_run_analysis.read_hull as hull
-import post_run_analysis.read_mag_props as nupdown
-import post_run_analysis.readO2 as O2
-import post_run_analysis.readRun_entries as read
+import electronic_analysis.energy_surface as PES
+import electronic_analysis.read_bader as bader
+import electronic_analysis.read_cohp as lob
+import electronic_analysis.read_dos as DOS
+import electronic_analysis.read_hull as hull
+import electronic_analysis.read_mag_props as nupdown
+import electronic_analysis.readO2 as O2
+import electronic_analysis.readRun_entries as read
 
 import structure_analysis.bailar_twist as bailar
 
-import utils.filter_runs as filter_runs
+import filtering_runs.filter_runs as filter_runs
 import utils.generic_plot as generic_plot
 import utils.platform_id as platform_id
 

@@ -9,8 +9,8 @@ from matplotlib.ticker import (AutoMinorLocator, FormatStrFormatter,
                                FuncFormatter, MaxNLocator, MultipleLocator,
                                StrMethodFormatter)
 
-import platform_id
-import post_run_analysis.read_hull as hull
+import utils.platform_id as platform_id
+from filtering_runs import filter_runs
 
 
 def set_mpl_rc_params():
@@ -249,7 +249,7 @@ def plot_structure_value_evolution(
                 stack_list = copy.deepcopy(
                     [s for s in sorted_entries if s.stacking == stack])
                 if x_na_coords == "x_na":
-                    stack_list = hull.generate_hull_entries(stack_list)
+                    stack_list = filter_runs.generate_hull_tags(stack_list)
                     x_y = np.array([[s.x_na, getattr(s, prop)] for s in stack_list
                                     if (s.status >= 4 and hasattr(s, prop))])
                     # print(X , Y)

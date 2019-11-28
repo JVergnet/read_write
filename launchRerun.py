@@ -14,10 +14,10 @@ from pymatgen.io.vasp.inputs import Kpoints
 from pymatgen.io.vasp.sets import MITRelaxSet
 
 import launchDisordered as launch
-import readRun_entries as read
-import run_utils.filter_runs as filter_runs
-import run_utils.platform_id as platform_id
-from drawKpoints import drawkpt
+import electronic_analysis.readRun_entries as read
+import filtering_runs.filter_runs as filter_runs
+import utils.platform_id as platform_id
+from structure_analysis.drawKpoints import drawkpt
 
 
 def less_precise_incar(struct):

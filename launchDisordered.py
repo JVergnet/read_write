@@ -14,9 +14,9 @@ from pymatgen import Structure
 from pymatgen.core.periodic_table import Element
 from pymatgen.io.vasp.sets import MPRelaxSet
 
-import run_utils.createStructureList as create_list
-import readRun_entries as read
-import run_utils.platform_id as platform_id
+import electronic_analysis.readRun_entries as read
+import structure_analysis.createStructureList as create_list
+import utils.platform_id as platform_id
 
 
 class Job(MPRelaxSet):

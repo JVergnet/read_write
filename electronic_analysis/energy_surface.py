@@ -10,11 +10,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D  # , axes3d
 
-import bailar_twist as bailar
-import PES_complex_plot as PES_complex_plot
-import read_hull as hull
-import readRun_entries as read
-import run_utils.generic_plot as generic_plot
+import electronic_analysis.PES_complex_plot as PES_complex_plot
+import electronic_analysis.read_hull as hull
+import electronic_analysis.readRun_entries as read
+
+import structure_analysis.bailar_twist as bailar
+
+import utils.generic_plot as generic_plot
 
 # from scipy.interpolate import griddata
 

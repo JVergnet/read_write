@@ -9,7 +9,7 @@ from matplotlib.collections import LineCollection
 from pymatgen.electronic_structure.core import Spin  # , OrbitalType
 from pymatgen.io.vasp import Vasprun
 
-from drawKpoints import drawkpt
+from structure_analysis.drawKpoints import drawkpt
 
 # import matplotlib
 # matplotlib.use('TkAgg')

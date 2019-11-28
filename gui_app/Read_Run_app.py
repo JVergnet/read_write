@@ -18,8 +18,8 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
                                                NavigationToolbar2Tk)
 from matplotlib.figure import Figure
 
-import post_run_analysis.read_hull as hull
-import post_run_analysis.readRun_entries as readRun
+import electronic_analysis.read_hull as hull
+import electronic_analysis.readRun_entries as readRun
 import Read_Run_pages as pages
 
 matplotlib.use("TkAgg")
@@ -260,7 +260,8 @@ class Start_page(pages.Blank_page):
                 text_tag.config(text="Not enough valid runs !")
 
         def clicked_tag_button():
-            self.vasprundictList = readRun.generate_tags(self.vasprundictList)
+            # readRun.generate_tags(self.vasprundictList)
+            self.vasprundictList = None
             global valid_run_list
             valid_run_list = True
             global initial_run_list

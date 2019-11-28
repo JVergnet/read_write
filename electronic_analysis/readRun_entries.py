@@ -22,7 +22,8 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 import utils.platform_id as platform_id
 
 import structure_analysis.structure_geometry_utils as cluster
-import read_mag_props as nupdown
+
+import electronic_analysis.read_mag_props as nupdown
 
 global PARAM
 

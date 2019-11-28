@@ -21,7 +21,7 @@ from pymatgen.analysis.chemenv.coordination_environments.coordination_geometry_f
 import utils.generic_plot as generic_plot
 
 try:
-    import post_run_analysis.PES_complex_plot as PES_plot
+    import electronic_analysis.PES_complex_plot as PES_plot
 except Exception as ex:
     print(ex)
 
