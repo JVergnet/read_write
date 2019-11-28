@@ -18,14 +18,14 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
                                                NavigationToolbar2Tk)
 from matplotlib.figure import Figure
 
-import read_hull as hull
+import post_run_analysis.read_hull as hull
+import post_run_analysis.readRun_entries as readRun
 import Read_Run_pages as pages
-import readRun_entries as readRun
 
 matplotlib.use("TkAgg")
 
 
-# import DOS_plot as DOS
+# import read_dos as DOS
 
 
 # Initialisation of the different parameters and lists

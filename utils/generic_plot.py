@@ -10,7 +10,7 @@ from matplotlib.ticker import (AutoMinorLocator, FormatStrFormatter,
                                StrMethodFormatter)
 
 import platform_id
-import read_hull as hull
+import post_run_analysis.read_hull as hull
 
 
 def set_mpl_rc_params():

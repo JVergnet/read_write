@@ -1,4 +1,4 @@
-# readBader.py
+# read_bader.py
 """
 Analyze CHGCAR using Henkelman algo (if not already done)
 Parse rundict.job_folder/BADER/*/acf.dat (* = CHARGE or SPIN))
@@ -16,8 +16,8 @@ from pymatgen.io.vasp.inputs import Poscar, Potcar
 
 
 # import readRun_entries as read
-import run_utils.platform_id as platform_id
-import run_utils.generic_plot as g_plot
+import utils.platform_id as platform_id
+import utils.generic_plot as g_plot
 
 
 def get_bader_tags(rundict_list):

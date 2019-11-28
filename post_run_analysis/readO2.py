@@ -10,13 +10,10 @@ from operator import itemgetter
 
 from pymatgen.io.vasp.outputs import Oszicar
 
-import generic_plot as generic_plot
-# import lobster_coop as lob
 import launchDisordered as launch
-# import read_hull as hull
-import platform_id
-# import matplotlib.pyplot as plt
 import readRun_entries as read
+import utils.generic_plot as generic_plot
+import utils.platform_id as platform_id
 
 
 def O2_computation(dosList, bader_done=False):

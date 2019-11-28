@@ -16,13 +16,13 @@ from pymatgen.apps.borg.hive import (SimpleVaspToComputedEntryDrone,
 from pymatgen.core.composition import Composition
 from pymatgen.entries.computed_entries import ComputedStructureEntry
 from pymatgen.io.vasp.inputs import Incar
-from pymatgen.io.vasp.outputs import Oszicar  # Outcar
+# from pymatgen.io.vasp.outputs import Oszicar  # Outcar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
-import run_utils.platform_id as platform_id
+import utils.platform_id as platform_id
 
-import run_utils.structure_geometry_utils as cluster
-import nupdown_scan as nupdown
+import structure_analysis.structure_geometry_utils as cluster
+import read_mag_props as nupdown
 
 global PARAM
 
@@ -400,37 +400,37 @@ def collect_valid_runs(mainFolder, checkDiff=False,
     return(valid_runs)
 
 
-def write_log_file(rundict_list, log_folder):
+# def write_log_file(rundict_list, log_folder):
 
-    log_file_name = platform_id.get_file_name(PARAM['mainFolder'], "log")
-    os.chdir(log_folder)
-    # log_file = open(logFileName,"a")
-    if input("print runs name & energies ?[Y]") == "Y":
-        print_stdout = True
+#     log_file_name = platform_id.get_file_name(PARAM['mainFolder'], "log")
+#     os.chdir(log_folder)
+#     # log_file = open(logFileName,"a")
+#     if input("print runs name & energies ?[Y]") == "Y":
+#         print_stdout = True
 
-    print("\nSaving logFile in  : {0} \n".format(log_file_name))
-    with open(log_file_name, 'w') as log_file:
-        for rundict in rundict_list:
-            message = make_rundict_str(rundict)
-            if print_stdout:
-                print(message)
-            log_file.write(message)
+#     print("\nSaving logFile in  : {0} \n".format(log_file_name))
+#     with open(log_file_name, 'w') as log_file:
+#         for rundict in rundict_list:
+#             message = make_rundict_str(rundict)
+#             if print_stdout:
+#                 print(message)
+#             log_file.write(message)
 
 
-def make_rundict_str(rundict):
-    message = "\n".join([
-        "NAME",
-        rundict.name_tag,
-        rundict.folder,
-        "ENERGY",
-        rundict.energy_tag,
-        "STRUCTURE",
-        rundict.structure_tag,
-    ])
+# def make_rundict_str(rundict):
+#     message = "\n".join([
+#         "NAME",
+#         rundict.name_tag,
+#         rundict.folder,
+#         "ENERGY",
+#         rundict.energy_tag,
+#         "STRUCTURE",
+#         rundict.structure_tag,
+#     ])
 
-    if getattr(rundict, 'bader_tag', None) is not None:
-        message += "\n".join(["", "BADER", rundict.baderTag])
-    return message
+#     if getattr(rundict, 'bader_tag', None) is not None:
+#         message += "\n".join(["", "BADER", rundict.baderTag])
+#     return message
 
 
 def get_equiv_site_list(structure):

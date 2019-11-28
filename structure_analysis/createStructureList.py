@@ -9,7 +9,7 @@ from pymatgen.transformations import standard_transformations as sd
 from pymatgen.transformations.advanced_transformations import \
     EnumerateStructureTransformation
 
-import run_utils.structure_geometry_utils as cluster
+import structure_analysis.structure_geometry_utils as cluster
 
 # import launchDisordered as launch
 

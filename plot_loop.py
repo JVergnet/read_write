@@ -8,18 +8,20 @@ import traceback
 import matplotlib
 import matplotlib.pyplot as plt
 
-import bailar_twist as bailar
-import DOS_plot as DOS
-import energy_surface as PES
-import lobster_coop as lob
-import nupdown_scan as nupdown
-import read_hull as hull
-import readBader as bader
-import readO2 as O2
-import readRun_entries as read
-import run_utils.filter_runs as filter_runs
-import run_utils.generic_plot as generic_plot
-import run_utils.platform_id as platform_id
+import post_run_analysis.energy_surface as PES
+import post_run_analysis.read_bader as bader
+import post_run_analysis.read_cohp as lob
+import post_run_analysis.read_dos as DOS
+import post_run_analysis.read_hull as hull
+import post_run_analysis.read_mag_props as nupdown
+import post_run_analysis.readO2 as O2
+import post_run_analysis.readRun_entries as read
+
+import structure_analysis.bailar_twist as bailar
+
+import utils.filter_runs as filter_runs
+import utils.generic_plot as generic_plot
+import utils.platform_id as platform_id
 
 print(matplotlib.get_backend())
 print(sys.version)
@@ -38,9 +40,11 @@ def filter_loop(run_list_all, input_graph_type=None, allow_filtering=True):
 
     while continue_filter_loop:
         x_coord = filter_runs.select_x_coord()
-        restricted_runs = filter_runs.restrict_run_list(
-            run_list_all, x_coord) \
-            if allow_filtering else run_list_all
+        if allow_filtering:
+            restricted_runs = filter_runs.restrict_run_list(run_list_all,
+                                                            x_coord)
+        else:
+            restricted_runs = run_list_all
 
         print("nb runs : {}".format(len(restricted_runs)))
         if len(restricted_runs) == 0:

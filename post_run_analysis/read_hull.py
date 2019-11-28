@@ -9,7 +9,7 @@ from matplotlib.ticker import AutoMinorLocator
 
 # from operator import itemgetter
 # import readRun_entries as read
-import run_utils.generic_plot as generic_plot
+import utils.generic_plot as generic_plot
 
 
 def generate_hull_entries(run_list, remove_extremes=False, coord="x_na"):

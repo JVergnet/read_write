@@ -15,9 +15,9 @@ from scipy.interpolate import griddata
 
 # personnal libraries
 # import readRun_entries as read
-import bailar_twist as bailar
+import structure_analysis.bailar_twist as bailar
 # import read_hull as hull
-import nupdown_scan as nupdown
+import read_mag_props as nupdown
 
 try:
     # plotting libraries

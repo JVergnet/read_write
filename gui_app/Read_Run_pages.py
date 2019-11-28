@@ -15,9 +15,9 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
                                                NavigationToolbar2Tk)
 # from matplotlib.figure import Figure
 
-import DOS_plot as DOS
+import read_dos as DOS
 import read_hull as hull
-import readBader as bader
+import read_bader as bader
 # import readRun_entries as readRun
 import run_utils.generic_plot as generic_plot
 

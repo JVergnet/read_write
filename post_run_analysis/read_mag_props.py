@@ -1,4 +1,4 @@
-# nupdown_scan.py
+# read_mag_props.py
 """ Plots 2D heatmaps (svg) and 3d surfaces (html) from abstract run data"""
 # from multiprocessing import Pool, cpu_count
 
@@ -22,8 +22,8 @@ from pymatgen.io.vasp.outputs import Oszicar  # Outcar
 # from pymatgen.io.vasp.outputs import Oszicar
 from scipy.interpolate import griddata
 
-import run_utils.generic_plot as g_plot
-import run_utils.platform_id as platform_id
+import utils.generic_plot as g_plot
+import utils.platform_id as platform_id
 
 # from skimage import measure
 
