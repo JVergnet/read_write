@@ -61,7 +61,7 @@ import structure_analysis.structure_geometry_utils as cluster
     Le fichier IBZKPTS doit contenir les points K, et la dernière colonne,
     correspondant à la multiplicité des points K doit être égale a 1.
 """
-settingDir = platform_id.setting_dir()
+setting_dir = platform_id.setting_dir()
 
 
 def generate_IBZKPT(folder):
@@ -82,7 +82,7 @@ def generate_IBZKPT(folder):
     print("new NC  incar \n", incar)
     incar.write_file("INCAR")
 
-    job_file_name = os.path.join(settingDir,
+    job_file_name = os.path.join(setting_dir,
                                  "job_scripts",
                                  "vasp_job_single_nc")
     name = "NC_{}".format(abs(hash(folder)))
@@ -142,7 +142,7 @@ def launch_COOP(folder, rerun=False):
 
     incar.write_file("INCAR")
 
-    job_file_name = os.path.join(settingDir,
+    job_file_name = os.path.join(setting_dir,
                                  "job_scripts",
                                  "vasp_job_single")
     name = "COOP_{}".format(abs(hash(folder)))

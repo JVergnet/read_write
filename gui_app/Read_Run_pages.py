@@ -15,11 +15,12 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
                                                NavigationToolbar2Tk)
 # from matplotlib.figure import Figure
 
-import read_dos as DOS
-import read_hull as hull
-import read_bader as bader
+from electronic_analysis import read_dos as DOS
+from electronic_analysis import read_hull as hull
+from electronic_analysis import read_bader as bader
 # import readRun_entries as readRun
-import run_utils.generic_plot as generic_plot
+from utils import generic_plot
+from filtering_runs import filter_runs
 
 matplotlib.use("TkAgg")
 
@@ -326,7 +327,7 @@ class Hull_page(Plot_page):
 
             elif hull_plot_type == "voltage":
                 hull_entries = copy.deepcopy(filtered_run_list)
-                hull_entries = hull.generate_hull_entries(hull_entries)
+                hull_entries = filter_runs.generate_hull_tags(hull_entries)
                 hull_entries = [s for s in hull_entries if s["status"] == 5]
                 fig = hull.plot_voltage_curve(hull_entries)
 

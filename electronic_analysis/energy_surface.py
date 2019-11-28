@@ -10,14 +10,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D  # , axes3d
 
-import electronic_analysis.PES_complex_plot as PES_complex_plot
-import electronic_analysis.read_hull as hull
-import electronic_analysis.readRun_entries as read
+from electronic_analysis import PES_complex_plot
 
-import structure_analysis.bailar_twist as bailar
+from electronic_analysis import readRun_entries as read
 
-import utils.generic_plot as generic_plot
+from structure_analysis import bailar_twist as bailar
 
+from utils import generic_plot
+from filtering_runs import filter_runs
 # from scipy.interpolate import griddata
 
 
@@ -143,7 +143,8 @@ def generate_stacking_dict(sorted_entries, chem_env_done):
                                                       vasprun_parsing_lvl=0.5,
                                                       file_system_choice="p")
             # distortion_mesh = read.generate_tags(distortion_mesh, force=True)
-            distortion_mesh = hull.generate_hull_entries(distortion_mesh)
+            distortion_mesh = filter_runs.generate_hull_tags(
+                distortion_mesh)
             if do_chem_env:
                 distortion_mesh = bailar.get_chem_env_tags(distortion_mesh)
 

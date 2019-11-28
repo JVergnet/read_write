@@ -422,7 +422,7 @@ class Filter_page(pages.Blank_page):
 
         def clicked_button_apply():
             global filtered_run_list
-            restricted_stack_runs = hull.generate_hull_entries(
+            restricted_stack_runs = filter_runs.generate_hull_tags(
                 initial_run_list, remove_extremes=None, coord=self.hull_value)
             restricted_hull_runs = [
                 d for d in restricted_stack_runs if d["status"] >= self.sieve_lvl]

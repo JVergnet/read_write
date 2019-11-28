@@ -3,7 +3,96 @@
 
 import traceback
 
-import electronic_analysis.read_hull as hull
+
+def generate_hull_tags(run_list, coord="x_na"):
+    """
+     sort the vasRunDictList entries (a list of dict) in 3 categories
+    add formation energy ("eform" key) to each vasprun_dict
+
+    input ; [{vaspRun : v , param : value }
+    output : [sorted_entries , clean_entries , hull_entries]
+
+    clean_entries : selected  entries of lowest energy for each x_na
+    hull_entries : clean_entries that lie on the convex hull
+
+    Sort the entries according to 1) their Na proportion and 2) their energy
+    """
+    print("computing hull in 2D : {} and energy".format(coord))
+    converged_entries = [d for d in run_list if d.status >= 3]
+    sorted_entries = sorted(converged_entries,
+                            key=lambda x: (
+                                getattr(x, coord),
+                                x.energy_per_fu))
+
+    # Clean Entries
+    # =================================================
+    # Select the structure of lowest energy for each Na
+    # x_na = []
+    # voltage = []
+
+    clean_entries = []
+    current_x = -1000000
+    for entry in sorted_entries:
+        if getattr(entry, coord) > current_x:
+            clean_entries.append(entry)
+            current_x = getattr(entry, coord)
+
+    for entry in clean_entries:
+        entry.status = 4
+
+    #       print(entry)
+    # print(clean_entries)
+    # [print([r.x_na for r in L])
+    #  for L in [sorted_entries, clean_entries]]
+    # compute the formation energy in meV
+    # with respect to endmembers (x->0 & x->1)
+    [[x_na0, Ex0], [x_na1, Ex1]] = [[getattr(clean_entries[i], attr)
+                                     for attr in [coord, "energy_per_fu"]]
+                                    for i in [0, -1]]
+    print([[x_na0, Ex0], [x_na1, Ex1]])
+    for entry in sorted_entries:
+        x = getattr(entry, coord)
+        entry.eform = (entry.energy_per_fu
+                       - (x - x_na0) / (x_na1 - x_na0) * Ex1
+                       - (x_na1 - x) / (x_na1 - x_na0) * Ex0) * 1000
+    # print("sorted entries {0} \n\n clean entries {1}\n\n"
+    #      .format(sorted_entries,clean_entries))
+
+    # Hull Entries
+    # =============================================
+    # Select structures that lie on the convex hull
+
+    # from scipy.spatial import ConvexHull
+    # hull = ConvexHull(points)
+    # hull_pts = points[hull.vertices,0], points[hull.vertices,1]
+
+    current_index = 0
+    hull_entries = [clean_entries[current_index]]
+
+    while current_index < len(clean_entries) - 1:
+        min_slope = +1e10
+        next_index = current_index + 1
+        # print("current index : {}".format(current_index))
+
+        for j in range(current_index + 1, len(clean_entries), 1):
+            [d_x, d_e] = [getattr(clean_entries[j], attr) -
+                          getattr(clean_entries[current_index], attr)
+                          for attr in [coord, 'eform']]
+            slope = d_e/d_x
+            # print(j)
+            if slope < min_slope:
+                min_slope = slope
+                next_index = j
+                # print("new index : {} , slope : {}".format(j, min_slope))
+
+        # seg_list.append([current_index,next_index])
+        current_index = next_index
+        hull_entries.append(clean_entries[current_index])
+
+    for entry in hull_entries:
+        entry.status = 5
+
+    return(sorted_entries)
 
 
 def restrict_run_list(all_runs_input, x_coord):
@@ -129,7 +218,7 @@ def hull_filtering(sieve_lvl, restricted_stack_runs, x_coord="x_na"):
                   "no filtering performed")
             selected_runs = restricted_stack_runs
         else:
-            restricted_stack_runs = hull.generate_hull_entries(
+            restricted_stack_runs = generate_hull_tags(
                 restricted_stack_runs,
                 coord=x_coord)
             selected_runs = [

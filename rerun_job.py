@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# launchRerun.py
+# rerun_job.py
 """Creates VASP imput files for vasp in the folder projectName/jobFformula
 INPUT : the projectDirectory
 OUTPUT : creates rerun of the specified project with specified strategy
@@ -13,7 +13,7 @@ import sys
 from pymatgen.io.vasp.inputs import Kpoints
 from pymatgen.io.vasp.sets import MITRelaxSet
 
-import launchDisordered as launch
+import write_job as launch
 import electronic_analysis.readRun_entries as read
 import filtering_runs.filter_runs as filter_runs
 import utils.platform_id as platform_id

@@ -23,7 +23,7 @@ import utils.platform_id as platform_id
 
 import structure_analysis.structure_geometry_utils as cluster
 
-import electronic_analysis.read_mag_props as nupdown
+from electronic_analysis import read_mag_props as nupdown
 
 global PARAM
 
@@ -241,7 +241,7 @@ def if_file_exist_gz(folder, non_comp_file):
     return(os.path.exists(os.path.join(folder, non_comp_file)))
 
 
-def collect_single_folder(job_folder, drone=None, vasprun_parsing_lvl=1):
+def collect_single_folder(job_folder, drone, vasprun_parsing_lvl=1):
     """
     Reading and parsing of VASP files in the job_folder folder
     vasprun_parsing_lvl > 0.5 : parse vasprun, else only parse vasp inputs
@@ -252,13 +252,6 @@ def collect_single_folder(job_folder, drone=None, vasprun_parsing_lvl=1):
     # 1 : pre-run
     # 2 : failed run
     # 3 : converged run
-
-    # if no drone give, minimal parsing
-    if drone is None:
-        drone = drone = VaspToComputedEntryDrone(
-            inc_structure=True,
-            parameters=["incar"],
-            data=['efermi', "converged"])
 
     status = 0
 

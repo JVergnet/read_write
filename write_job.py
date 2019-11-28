@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# launchDisordered.py
+# write_job.py
 """Creates VASP input files in the folder projectName/jobFformula"""
 
 

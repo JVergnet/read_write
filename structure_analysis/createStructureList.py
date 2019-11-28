@@ -11,7 +11,7 @@ from pymatgen.transformations.advanced_transformations import \
 
 import structure_analysis.structure_geometry_utils as cluster
 
-# import launchDisordered as launch
+# import write_job as launch
 
 # METAL DISORDER
 # ----------------------------------------
