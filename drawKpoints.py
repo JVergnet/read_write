@@ -8,9 +8,9 @@ import os
 import sys
 
 import matplotlib.pyplot as plt
-import numpy as np
+#import numpy as np
 import pymatgen as mg
-from mpl_toolkits.mplot3d import Axes3D
+#from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from pymatgen.io.vasp.inputs import Kpoints
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -34,10 +34,6 @@ __author__ = "Germain Salvato-Vallverdu"
 __email__ = "germain.vallverdu@univ-pau.fr"
 __licence__ = "GPL"
 __date__ = "April 2014"
-
-
-
-
 
 
 def drawkpt(struct, ndiv="10"):

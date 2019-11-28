@@ -1,16 +1,12 @@
-
+"DOS PLOTTING FONCTIONS"
 
 import matplotlib.pyplot as plt
 import numpy as np
 from pymatgen.electronic_structure.core import OrbitalType, Spin
 
-# import readRun_entries as read
-import generic_plot as generic_plot
+import run_utils.generic_plot as generic_plot
 
 # import pymatgen.analysis.diffraction.xrd as xrd
-
-
-# from operator import itemgetter
 
 
 # DOS PLOTTING FONCTIONS
@@ -39,9 +35,9 @@ def DOS_per_site(runDict, spin):
     cmaps = [plt.get_cmap(s) for s in cmap_colors]
     cmap_list = {}
     for elt_name, cmap in zip(spec_count.keys(), cmaps):
-        L = np.linspace(0.8, 0.45, spec_count[elt_name]) \
+        elt_colors = np.linspace(0.8, 0.45, spec_count[elt_name]) \
             if spec_count[elt_name] > 1 else [0.7]
-        cmap_list[elt_name] = cmap(L)
+        cmap_list[elt_name] = cmap(elt_colors)
     densities = {}
     colors = {}
     for site_dict in runDict.equivSiteList:
@@ -121,10 +117,10 @@ def plot_DOS_on_axe(axe, rundict, Emin, Emax,
 
     # v = runDict['vaspRun']
     [ymin, ymax] = [0, 0]
-    E = rundict.data["tdos"].energies - rundict.data["efermi"]
+    e_values = rundict.data["tdos"].energies - rundict.data["efermi"]
     ind_min = 0
     ind_max = 0
-    for q, e in enumerate(E):
+    for q, e in enumerate(e_values):
         if e < Emin:
             ind_min = q
         if e < Emax:
@@ -174,9 +170,9 @@ def plot_DOS_on_axe(axe, rundict, Emin, Emax,
             return(x)
         else:
             half = np.ceil(n_input) // 2
-            N = half * 2 + 1
+            n = half * 2 + 1
             cumsum = np.cumsum(np.insert(x, 0, 0))
-            s = (cumsum[N:] - cumsum[:-N]) / float(N)
+            s = (cumsum[n:] - cumsum[:-n]) / float(n)
             s = np.insert(s, len(s), x[-1]*np.ones(half))
             s = np.insert(s, 0, x[0]*np.ones(half))
             return(s)
@@ -184,9 +180,9 @@ def plot_DOS_on_axe(axe, rundict, Emin, Emax,
     if spin_choice == 0:  # spin up & down
         for n, key in enumerate(densities_list[0].keys()):
             dos_up = move_mean(densities_list[0][key], N_move_mean)
-            axe.plot(E, dos_up, color=colors[key], label=key, lw=2)
+            axe.plot(e_values, dos_up, color=colors[key], label=key, lw=2)
             dos_down = -move_mean(densities_list[1][key], N_move_mean)
-            axe.plot(E, dos_down, color=colors[key], lw=2)
+            axe.plot(e_values, dos_down, color=colors[key], lw=2)
 
             ymax = max(ymax, max(dos_up[ind_min:ind_max]))
             ymin = min(ymin, min(dos_down[ind_min:ind_max]))
@@ -205,7 +201,7 @@ def plot_DOS_on_axe(axe, rundict, Emin, Emax,
             ymax = max(ymax, max(dos[ind_min:ind_max]))
             ymin = min(ymin, min(dos[ind_min:ind_max]))
 
-            axe.plot(E, dos, color=colors[key], label=key, lw=2)
+            axe.plot(e_values, dos, color=colors[key], label=key, lw=2)
 
     axe.axvline(x=0)  # the fermi lvl
     axe.set_ylim([ymin * 1.1, ymax * 1.1])
@@ -246,8 +242,8 @@ def plot_DOS(rundict_list,
              DOS_choice=None,
              Erange=None,
              N_move_mean=None):
+    "plot DOS or XRD for each structure in the vasprundictList"
 
-    # plot DOS or XRD for each structure in the vasprundictList
     nbRun = len(rundict_list)
 
     # OPTIONS
@@ -265,14 +261,14 @@ def plot_DOS(rundict_list,
             print("spin to default : spin up & down")
 
     # graph type choice
-    DOS_OPTION = ["spd", "perSite", "perElt", "total"]
+    dos_options = ["spd", "perSite", "perElt", "total"]
     while DOS_choice is None:
         try:
-            DOS_choice = DOS_OPTION[int(input(
+            DOS_choice = dos_options[int(input(
                 "DOS type option : {0} \nEnter DOS type number : \n"
-                .format(DOS_OPTION)))]
+                .format(dos_options)))]
         except Exception as ex:
-            print("Bad Option")
+            print("Bad Option", ex)
 
     doo_projected = False
     # if input("Plot min doo projection? Y / N  : ")=="Y" :

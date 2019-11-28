@@ -9,13 +9,14 @@ from operator import itemgetter
 import matplotlib.pyplot as plt
 import numpy as np
 from mpl_toolkits.mplot3d import Axes3D  # , axes3d
-# from scipy.interpolate import griddata
 
 import bailar_twist as bailar
 import PES_complex_plot as PES_complex_plot
 import read_hull as hull
 import readRun_entries as read
-import generic_plot
+import run_utils.generic_plot as generic_plot
+
+# from scipy.interpolate import griddata
 
 
 def plot_scatter_mesh_cell_shape(struct_list):

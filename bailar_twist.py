@@ -18,23 +18,12 @@ from matplotlib.ticker import FormatStrFormatter
 from pymatgen.analysis.chemenv.coordination_environments.coordination_geometry_finder import \
     LocalGeometryFinder
 
-import DOS_plot as DOS
-import generic_plot as generic_plot
-import readBader as bader
-# import lobster_coop as lob
-import readRun_entries as read
+import run_utils.generic_plot as generic_plot
 
 try:
     import PES_complex_plot as PES_plot
 except Exception as ex:
     print(ex)
-
-mpl.rcParams['font.family'] = 'sans-serif'
-mpl.rcParams['font.sans-serif'] = ['Arial', 'Helvetica']
-mpl.rcParams['axes.labelsize'] = 17
-mpl.rcParams['xtick.labelsize'] = 14
-mpl.rcParams['ytick.labelsize'] = 14
-mpl.rc('legend', fontsize=15)
 
 
 global species
@@ -755,9 +744,6 @@ def plot_structure_graphs(runList, chem_env_done):
             ax_simple.yaxis.set_minor_locator(generic_plot.minor_locator())
             ax_simple.xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
 
-            bader.plot_charge_and_mag(stable_struct_list, detailled=None)
-            DOS.plot_DOS(stable_struct_list,
-                         spin_choice=None, DOS_choice=None)
             plt.show(block=False)
 
             generic_plot.save_fig(fig_simple, "doo and mag",

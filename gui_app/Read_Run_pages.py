@@ -1,25 +1,25 @@
 # Read_Run_pages.py
 
+import copy
 import itertools
-import os
+# import os
 import tkinter as tk
 from functools import partial
-from tkinter import filedialog, messagebox, ttk
+from tkinter import filedialog, ttk  # , messagebox
 
 import matplotlib
-import numpy as np
-from matplotlib import pyplot as plt
+# import numpy as np
+# from matplotlib import pyplot as plt
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
                                                NavigationToolbar2Tk)
-from matplotlib.figure import Figure
+# from matplotlib.figure import Figure
 
 import DOS_plot as DOS
-# Imports
-import generic_plot
 import read_hull as hull
 import readBader as bader
-import readRun_entries as readRun
+# import readRun_entries as readRun
+import run_utils.generic_plot as generic_plot
 
 matplotlib.use("TkAgg")
 
@@ -307,8 +307,6 @@ class Hull_page(Plot_page):
         self.setup_hull_page(tab_control, controller, filtered_run_list)
 
     def setup_hull_page(self, tab_control, controller, filtered_run_list):
-        import generic_plot as generic_plot
-        import copy
 
         def clicked_button_plot(hull_plot_type):
 

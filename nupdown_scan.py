@@ -4,6 +4,7 @@
 
 import math
 import os
+from operator import attrgetter
 
 # import matplotlib.cm as cm
 # from matplotlib.colors import LogNorm
@@ -11,16 +12,18 @@ import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 # generric libraries
 import numpy as np
-from mpl_toolkits.axes_grid1 import AxesGrid
+# from mpl_toolkits.axes_grid1 import AxesGrid
+# from matplotlib.gridspec import GridSpec
+# personnal libraries
+# import readRun_entries as read
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pymatgen.io.vasp.outputs import Oszicar  # Outcar
 # pymatgen libraries
 # from pymatgen.io.vasp.outputs import Oszicar
 from scipy.interpolate import griddata
 
-# personnal libraries
-# import readRun_entries as read
-import generic_plot as g_plot
-import platform_id
+import run_utils.generic_plot as g_plot
+import run_utils.platform_id as platform_id
 
 # from skimage import measure
 
@@ -107,23 +110,45 @@ def build_x_y_e(rundict_list, attr_x, attr_y):
     """
     build a X / Y / E array to be plotted
 
-    define a vertical slice (constant X) : all structure with same NELECT (x axis)
     scale to zero energy the bottom of each slice
     """
-    for attr_x_value in {getattr(d, attr_x) for d in rundict_list}:
-        struct_list_slice = [
-            d for d in rundict_list if getattr(d, attr_x) == attr_x_value]
-        e_min = min([d.energy_per_fu for d in struct_list_slice])
-        print(" {}={} :  {} runs, E min = {:.2f} ".
-              format(attr_x, attr_x_value, len(struct_list_slice), e_min))
+    list_of_slices = get_constant_x_slices(attr_x, rundict_list)
 
-        for rundict in struct_list_slice:
+    for constant_x_slice in list_of_slices:
+        e_min = min([d.energy_per_fu for d in constant_x_slice])
+        print(" {}={} :  {} runs, E min = {:.2f} ".
+              format(attr_x, getattr(constant_x_slice[0], attr_x),
+                     len(constant_x_slice), e_min))
+
+        for rundict in constant_x_slice:
             rundict.e_valley = (rundict.energy_per_fu -
                                 e_min)*1000   # in meV
 
-    x_y_e = np.array(
-        [[getattr(d, attr_x), getattr(d, attr_y), d.e_valley] for d in rundict_list])
-    return x_y_e
+    return np.array([[getattr(d, attr_x), getattr(d, attr_y), d.e_valley]
+                     for d in rundict_list])
+
+
+def build_x_y_e_minimal_path(rundict_list, attr_x, attr_y):
+    "build a X / Y / E array only for minimal points (in the valley)"
+
+    list_of_slices = get_constant_x_slices(attr_x, rundict_list)
+
+    minimal_path_runs = [min(list_slice, key=attrgetter('energy_per_fu'))
+                         for list_slice in list_of_slices]
+
+    return np.array([[getattr(d, attr_x), getattr(d, attr_y), 0]
+                     for d in minimal_path_runs])
+
+
+def get_constant_x_slices(attr_x, rundict_list):
+    """return the list of vertical slices (constant X)
+    all structure with same NELECT (x axis)"""
+
+    list_of_slices = []
+    for x_value in {getattr(d, attr_x) for d in rundict_list}:
+        list_of_slices.append([
+            d for d in rundict_list if getattr(d, attr_x) == x_value])
+    return list_of_slices
 
 
 def build_x_y_c(rundict_list, attr_x, attr_y,
@@ -262,7 +287,8 @@ def plot_nelect_heatmap(input_rundict_list):
                           bader_landscapes=landscapes_to_draw)
 
 
-def plot_abstract_heatmap(rundict_list, attr_x="nelect", attr_y="doo", bader_landscapes=None):
+def plot_abstract_heatmap(rundict_list, attr_x="nelect", attr_y="doo",
+                          bader_landscapes=None, plot_computed_points=True):
     """
     generic method to draw energy heatmap and other bader heatmap if required
     """
@@ -294,59 +320,75 @@ def plot_abstract_heatmap(rundict_list, attr_x="nelect", attr_y="doo", bader_lan
                     {"title": plot_title, "data": x_y_c, "cmap": cmap})
 
     nb_plots = len(plot_data)
-    fig = plt.figure(num="2D_landscapes", figsize=(6*nb_plots, 7))
-    # fig, axes = plt.subplots(1, nb_plots, num="2D_landscapes",
-    #                          figsize=(7*nb_plots, 7),
-    #                          # constrained_layout=True
-    #                          )
-    # import matplotlib.gridspec as gridspec
 
-    # gs = gridspec.GridSpec(1, 2*nb_plots,
-    #                        width_ratios=np.hstack(
-    #                            [[10, 1] for _ in range(nb_plots)]))
+    fig, axes = plt.subplots(ncols=nb_plots, nrows=1,
+                             num="2D_landscapes", figsize=g_plot.cm2inch(6*nb_plots, 10),
+                             # constrained_layout=True => works bad with gridspec.wspace
+                             gridspec_kw={'wspace': 0.3})  # avoid  colorbar ticks overlap
 
-    grid = AxesGrid(fig, 111,  # similar to subplot(143)
-                    nrows_ncols=(1, nb_plots),
-                    axes_pad=1,
-                    label_mode="all",
-                    share_all=True,
-                    cbar_location="right",
-                    cbar_mode="each",
-                    cbar_size="5%",
-                    cbar_pad="3%",
-                    )
+    if nb_plots == 1:
+        axes = [axes]
+
+    # gs = GridSpec(1, nb_plots, figure=fig, wspace=0.5)
+    # fig= plt.figure(num="2D_landscapes", figsize=(6*nb_plots, 7))
+    # axes = [fig.add_subplot(gs[0, j+1]) for j in range(nb_plots)]
+
+    # grid = AxesGrid(fig, 111,  # similar to subplot(143)
+    #                 nrows_ncols=(1, nb_plots),
+    #                 direction="row",
+    #                 axes_pad=1,
+    #                 add_all=True,
+    #                 label_mode="all",
+    #                 share_all=True,
+    #                 cbar_location="right",
+    #                 cbar_mode="each",
+    #                 cbar_size="5%",
+    #                 cbar_pad="3%",
+    #                 aspect=False
+    #                 )
 
     data_dict = plot_data[0]
     plot_energy_landscape(data_dict["data"],
-                          grid[0], grid.cbar_axes[0],
+                          axes[0],
                           attr_x=attr_x, attr_y=attr_y,
                           plot_title=data_dict["title"],
                           cmap=data_dict["cmap"])
 
     for (j, data_dict) in enumerate(plot_data[1:]):
         plot_charge_landscape(data_dict["data"],
-                              grid[j+1], grid.cbar_axes[j+1],
+                              axes[j+1],
                               attr_x=attr_x, attr_y=attr_y,
                               plot_title=data_dict["title"],
                               cmap=data_dict["cmap"])
+    if plot_computed_points:
+        x_y_e_path = build_x_y_e_minimal_path(rundict_list, attr_x, attr_y)
+        for axe in axes:
+            axe.scatter(x_y_e[:, 0], x_y_e[:, 1], c="black", marker="+",
+                        s=30, label="computed structures",
+                        alpha=0.2)
 
-    plt.subplots_adjust(wspace=0.4)
+            axe.scatter(x_y_e_path[:, 0], x_y_e_path[:, 1], c="yellow", marker="+",
+                        s=30, label="minimal structures",
+                        alpha=1)
 
-    fig.tight_layout()
+            axe.set_xlim(min(x_y_e[:, 0]), max(x_y_e[:, 0]))
+            axe.set_ylim(min(x_y_e[:, 1]), max(x_y_e[:, 1]))
+
     plt.show(block=False)
 
 
-def colorbar(ax, mappable):
+def divided_colorbar(axe, mappable, **colorbar_kw):
     "mappable = artist such as plot or heatmap or scatter"
-    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
     # ax = mappable.axes
-    fig = ax.figure
-    divider = make_axes_locatable(ax)
+    fig = axe.figure
+    divider = make_axes_locatable(axe)
     cax = divider.append_axes("right", size="5%", pad="3%")
-    return fig.colorbar(mappable, cax=cax)
+
+    return fig.colorbar(mappable, cax=cax, **colorbar_kw)
 
 
-def plot_energy_landscape(x_y_e,  axe, cbar_axe, attr_x="nelect", attr_y="doo",
+def plot_energy_landscape(x_y_e, axe, attr_x="nelect", attr_y="doo",
                           plot_title=None, cmap='coolwarm'):
     " plot energy heatmap using abstract attributes for x and y"
 
@@ -356,25 +398,24 @@ def plot_energy_landscape(x_y_e,  axe, cbar_axe, attr_x="nelect", attr_y="doo",
     # colorbar_title = "Energy"
 
     # bounds = np.linspace(0, 3000, num=16, endpoint=True)
-    max_e, ticks = find_E_max(interp_e)
+    max_e, ticks = find_e_max(interp_e)
     bounds = np.linspace(0, max_e, num=41, endpoint=True)
 
-    norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
+    # norm = colors.BoundaryNorm(boundaries=bounds, ncolors=256)
     e_img = axe.contourf(grid_x,
                          grid_y,
                          interp_e,
-                         bounds,
+                         levels=bounds,
                          cmap=cmap,
-                         norm=norm,
-                         extend='max')
+                         # norm=norm,
+                         extend='max'
+                         )
     # axe_img.cmap.set_under('white')
     e_img.cmap.set_over('xkcd:brick red')  # color for E above max defined
 
-    axe.scatter(x_y_e[:, 0], x_y_e[:, 1], c="black", marker="+",
-                s=30, label="computed structures",
-                alpha=0.2)
     # cbar = \
-    cbar_axe.colorbar(e_img, ticks=ticks)
+    # cbar_axe.colorbar(e_img)  #
+    divided_colorbar(axe, e_img, ticks=ticks)
     #  ,  norm=colors.PowerNorm(gamma=1./3.) ) //,
     # axes[-1].imshow(interp_E, extent=(np.amin(x), np.amax(x), np.amin(y), np.amax(y)),
     #                             cmap=cm.jet) #, norm=LogNorm())
@@ -387,13 +428,13 @@ def plot_energy_landscape(x_y_e,  axe, cbar_axe, attr_x="nelect", attr_y="doo",
     axe.set_xlabel(attr_x)
     # axe.set_ylabel(attr_y)
     # instead of y_label
-    axe.text(0, 1, attr_y, transform=axe.transAxes,
-             fontsize=10, va='top', ha='right')
+    axe.text(0, 1.03, attr_y, transform=axe.transAxes,
+             fontsize=10, va='bottom', ha='right')
     title_string = 'Energy landscape' if plot_title is None else plot_title
     axe.title.set_text(title_string)
 
 
-def find_E_max(interp_e):
+def find_e_max(interp_e):
     """Find a nice value for E max (avoid absurdly high energies)
 
     take 75th percentile then round to nearest power of 10"""
@@ -407,12 +448,10 @@ def find_E_max(interp_e):
     return max_e_nice, ticks
 
 
-def plot_charge_landscape(x_y_c, axe, cbar_axe,
+def plot_charge_landscape(x_y_c, axe,
                           attr_x="nelect", attr_y="doo",
                           plot_title="", cmap='Reds'):
     " plot charge heatmap using abstract attributes for x and y"
-
-    # may raise an AssertionError catched in plot_abstract_heatmap
 
     # interpolation of the grid of computed points
     grid_x, grid_y, interp_c = interp_xye(x_y_c)
@@ -436,11 +475,9 @@ def plot_charge_landscape(x_y_c, axe, cbar_axe,
     c_img.cmap.set_under('white')
     c_img.cmap.set_over('black')  # color for E above max defined
 
-    axe.scatter(x_y_c[:, 0], x_y_c[:, 1], c="black", marker="+",
-                s=30, label="computed structures",
-                alpha=0.2)
     # cbar =  \
-    cbar_axe.colorbar(c_img)
+    # cbar_axe.colorbar(c_img)
+    divided_colorbar(axe, c_img)
     # fig.colorbar(c_img, ax=axe)
     #  ,  norm=colors.PowerNorm(gamma=1./3.) ) //,
     # axes[-1].imshow(interp_E, extent=(np.amin(x), np.amax(x), np.amin(y), np.amax(y)),
@@ -450,9 +487,10 @@ def plot_charge_landscape(x_y_c, axe, cbar_axe,
     # plt.clabel(E_img, [25], inline=True, fmt=["25 meV"], fontsize=10)
     # Add the contour line levels to the colorbar
     # cbar.add_lines(contours)
-
+    axe.text(0, 1.03, attr_y, transform=axe.transAxes,
+             fontsize=10, va='bottom', ha='right')
     axe.set_xlabel(attr_x)
-    axe.set_ylabel(attr_y)
+    # axe.set_ylabel(attr_y)
 
     axe.title.set_text(plot_title)
     return True

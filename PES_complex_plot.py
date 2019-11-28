@@ -1,16 +1,23 @@
 # PES_complex_plot.py
 
-# scientific libraries
-import numpy as np
-from scipy.interpolate import griddata
-
-
 # standard libraries
 # from operator import itemgetter
 # import os
 # import sys
 # import subprocess
 import importlib
+
+# import matplotlib as mpl
+import matplotlib.pyplot as plt
+# scientific libraries
+import numpy as np
+from scipy.interpolate import griddata
+
+# personnal libraries
+# import readRun_entries as read
+import bailar_twist as bailar
+# import read_hull as hull
+import nupdown_scan as nupdown
 
 try:
     # plotting libraries
@@ -22,15 +29,7 @@ try:
 except Exception as ex:
     print(ex)
 
-# import matplotlib as mpl
-import matplotlib.pyplot as plt
 # from mpl_toolkits.mplot3d import Axes3D, axes3d
-
-# personnal libraries
-# import readRun_entries as read
-import bailar_twist as bailar
-# import read_hull as hull
-import nupdown_scan as nupdown
 
 
 def plot_3d_angle_energy_from_struct_list(struct_list, struct_mesh=None):
@@ -57,32 +56,22 @@ def plot_3d_angle_energy_from_struct_list(struct_list, struct_mesh=None):
 
 
 def get_OO_angles_prop(struct_list, prop="ediff"):
-    struct_list = nupdown.get_mag_tag_list(
-        struct_list) if prop == "mag" else struct_list
-    # make e_valley tag
-    # slicing the list by equal x_na (to get valleys)
-    for x_na in set([d["x_na"] for d in struct_list]):
-        struct_list_slice = [d for d in struct_list if d["x_na"] == x_na]
-        prop_min = min([d[prop] for d in struct_list_slice])
-        print(" x_na ={} :  {} runs, E min = {:.2f} ".format(
-            x_na, len(struct_list_slice), prop_min))
-        for d in struct_list_slice:
-            d["e_valley"] = 1000 * \
-                (d[prop] - prop_min) if prop == "ediff" else d[prop]
+
+    x_y_e = nupdown.build_x_y_e(struct_list, "x_na", "mag")
 
     Z_bailar_all = []  # list (nb structures)  of lists (nb of angles)
     Y_trigo_all = []
     X_all = []
     E_all = []
 
-    for d in struct_list:
+    for i, d in enumerate(struct_list):
         struct = d["structure"]
         YZ = np.array([bailar.measure_quadruplet_angles(struct, MMOO)
                        for MMOO in d["MMOO_quadruplets"]])
         Z_bailar_all.append(YZ[:, 0])  # Z_bailar
         Y_trigo_all.append(YZ[:, 1])  # Y_trigo
-        X_all.append(np.ones_like(YZ[:, 1]) * d["x_na"])
-        E_all.append(np.ones_like(YZ[:, 1]) * d["e_valley"])
+        X_all.append(np.ones_like(YZ[:, 1]) * x_y_e[:, 0][i])
+        E_all.append(np.ones_like(YZ[:, 1]) * x_y_e[:, 2][i])
 
     Z_bailar_all = np.vstack(Z_bailar_all)
     Y_trigo_all = np.vstack(Y_trigo_all)
@@ -136,7 +125,7 @@ def plot_3D_angles_PES(
     )
 
     scene['xaxis']['title'] = "Na content"
-    scene['yaxis']['title'] = r"vertical O-O distance (in $\AA$)"
+    scene['yaxis']['title'] = "vertical O-O distance (in $\AA$)"
     scene['zaxis']['title'] = "bailar angle (in °)"
 
     data_relax_list = [get_scatterplot_data(
@@ -317,7 +306,7 @@ def plot_single_isosurf(XYZE_mesh, interp_E, data_relax_list,
         iso_value = 50
         try:
             input_iso = float(
-                eval(input("Energy of the isosurface (in mEV) : ")))
+                int(input("Energy of the isosurface ([integer] in mEV) : ")))
             if input_iso > 0 and input_iso < max(XYZE_mesh[:, 3]):
                 iso_value = input_iso
             else:
@@ -336,6 +325,7 @@ def plot_single_isosurf(XYZE_mesh, interp_E, data_relax_list,
     fig['layout']['scene2'].update(scene)
 
     # only raw mesh points on left fig
+    data_mesh = {}
     data_mesh['scene'] = 'scene1'
     fig.append_trace(data_mesh, 1, 1)
 
@@ -356,6 +346,7 @@ def plot_slider_isosurf(
     XYZE_mesh,
     interp_E,
     data_relax_list,
+    scene,
     nb_grid_pts=100,
     energy_values=[
         10,

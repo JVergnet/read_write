@@ -24,6 +24,21 @@ def figure_dir():
     return(os.path.join(local_cluster_dir(), "figures"))
 
 
+def get_file_name(folder, name, ext=""):
+    """
+    create a unique filename by adding
+    incremental suffix to the name in argument
+    """
+    k = 0
+    basis = os.path.join(folder, name) + "_"
+    file_name = basis + str(k)
+    while os.path.exists(file_name + ext):
+        k += 1
+        file_name = basis + str(k)
+        print(file_name)
+    return file_name
+
+
 def running_on_cluster():
     # Check if we are on frodon
     cluster_names = ['frodon.lsd.univ-montp2.fr',

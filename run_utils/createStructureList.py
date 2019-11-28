@@ -9,7 +9,7 @@ from pymatgen.transformations import standard_transformations as sd
 from pymatgen.transformations.advanced_transformations import \
     EnumerateStructureTransformation
 
-import structure_geometry_utils as cluster
+import run_utils.structure_geometry_utils as cluster
 
 # import launchDisordered as launch
 
@@ -233,8 +233,7 @@ def desodiation_tree(
 
 
 def desodiation_incremental(pristineStruct, xmin=0.5, xmax=1):
-
-    return([])
+    pass
 
 
 # OXYGEN DISORDER
@@ -324,8 +323,8 @@ def rotation_in_supercell(initialStruct,
         chosenList.append({'structure': currentStruct,
                            'id': "{0}deg".format(current_angle)})
         current_angle += angle_step
-        currentStruct = cluster.rotate_oxygens_in_metal_layer(
-            superCell, angle=current_angle, translation=(0, 0, 0))
+        # currentStruct = cluster.rotate_oxygens_in_metal_layer(
+        #     superCell, angle=current_angle, translation=(0, 0, 0))
         if current_angle > angle_max:
             break
 

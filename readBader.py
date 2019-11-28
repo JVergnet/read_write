@@ -1,17 +1,23 @@
 # readBader.py
-
+"""
+Analyze CHGCAR using Henkelman algo (if not already done)
+Parse rundict.job_folder/BADER/*/acf.dat (* = CHARGE or SPIN))
+Compare bader pop vs potcar pop to get oxidation state
+Plot bader pop & oxidation state (site-wise or structure average)
+"""
 import os
 import subprocess
 from multiprocessing import Pool, cpu_count
 
 import matplotlib.pyplot as plt
-# read bader charge and volume of the structure
 import numpy as np
 from pymatgen.analysis.ewald import EwaldSummation
 from pymatgen.io.vasp.inputs import Poscar, Potcar
 
-import generic_plot as g_plot
-import readRun_entries as read
+
+# import readRun_entries as read
+import run_utils.platform_id as platform_id
+import run_utils.generic_plot as g_plot
 
 
 def get_bader_tags(rundict_list):
@@ -25,10 +31,11 @@ def get_bader_tags(rundict_list):
 
     poll_bader_array = []
     try:
-        with Pool(processes=cpu_count()) as p:
-            poll_bader_array = p.map(get_bader_data_single, rundict_list)
-            p.close()
-            p.join()
+        with Pool(processes=cpu_count()) as parallel_threads:
+            poll_bader_array = parallel_threads.map(
+                get_bader_data_single, rundict_list)
+            parallel_threads.close()
+            parallel_threads.join()
 
     except Exception as ex:
         print("EXCEPTION", ex)
@@ -45,9 +52,8 @@ def get_bader_tags(rundict_list):
         struct = rundict.structure_data
         for j, prop in enumerate(
                 ['charge', 'vol_chg', 'magnetization', 'vol_mag']):
-            struct.add_site_property(prop,
-                                     [bader_array[i][j]
-                                         for i in range(struct.num_sites)])
+            struct.add_site_property(prop, [bader_array[i][j]
+                                            for i in range(struct.num_sites)])
         rundict.bader_done = True
 
     print("bader tag after polling")
@@ -56,7 +62,7 @@ def get_bader_tags(rundict_list):
     return rundict_list
 
 
-def get_bader_data_single(runDict):
+def get_bader_data_single(rundict):
     """
     Check existence of bader files / performs the calculation if no file is found
     read the data
@@ -67,17 +73,17 @@ def get_bader_data_single(runDict):
         bader_array[i] = (bader_charges,charge_vol,bader_magmom,magmom_vol)
     """
 
-    if runDict.bader_done:
-        print("bader already done for {}".format(runDict.name_tag))
+    if rundict.bader_done:
+        print("bader already done for {}".format(rundict.name_tag))
         return(True, None)
 
-    valid_bader_files = generate_bader_files(runDict.job_folder)
+    valid_bader_files = generate_bader_files(rundict.job_folder)
 
     if not valid_bader_files:
-        print("Bader computation aborted for {}".format(runDict.name_tag))
+        print("Bader computation aborted for {}".format(rundict.name_tag))
         return(False, None)
 
-    bader_data_array = read_bader_files(runDict.job_folder)
+    bader_data_array = read_bader_files(rundict.job_folder)
     return(True, bader_data_array)
 
 
@@ -114,7 +120,7 @@ def generate_bader_files(folder, remove_mag=True):
                 bader_folder = os.path.join(folder, "BADER")
                 data_folder_list = [bader_folder] + \
                     [os.path.join(bader_folder, data)
-                        for data in ["SPIN", "CHARGE"]]
+                     for data in ["SPIN", "CHARGE"]]
 
                 for data_folder in data_folder_list:
                     for bader_file in [os.path.join(data_folder, o)
@@ -130,7 +136,7 @@ def generate_bader_files(folder, remove_mag=True):
     except Exception as ex:
         print("do_bader failed in {} : {} : ".format(folder, ex))
 
-    return(sucessful_bader)
+    return sucessful_bader
 
 
 def read_bader_files(folder):
@@ -174,7 +180,7 @@ def read_bader_files(folder):
     #         bader_magmom,
     #         magmom_vol)]
     bader_array = np.hstack((bad_chg, bad_mag))
-    return(bader_array)
+    return bader_array
 
 
 def get_charge(self, atom_index):
@@ -191,7 +197,7 @@ def get_charge(self, atom_index):
     return self.data[atom_index]["charge"]
 
 
-def get_charge_transfer(atom_index, structure,  potcar, poscar):
+def get_charge_transfer(atom_index, structure, potcar, poscar):
     """
     Returns the charge transferred for a particular atom. Requires POTCAR
     to be supplied.
@@ -209,10 +215,14 @@ def get_charge_transfer(atom_index, structure,  potcar, poscar):
         raise ValueError("POTCAR must be supplied in order to calculate "
                          "charge transfer!")
     potcar_indices = []
-    for i, v in enumerate(poscar.natoms):  # natoms = [1,3] for TiS3
-        potcar_indices += [i] * v
+    # natoms = [1,3] for TiS3
+    for i, nb_same_specie in enumerate(poscar.natoms):
+        potcar_indices += [i] * nb_same_specie  # [1,2,2,2] for TiS3
         # s.composition.element_composition[site.specie]
+
+    # atom 3 (S) : potcar[2]
     nelect = potcar[potcar_indices[atom_index]].nelectrons
+
     return structure[atom_index].properties["charge"] - nelect
 
 
@@ -232,18 +242,18 @@ def get_oxidation_state_decorated_structure(structure, potcar, poscar):
     return structure
 
 
-def get_madelung_tag_single(runDict, force=False, verbose=0, oxi_int=False):
-    struct_data = runDict.structure_data
+def get_madelung_tag_single(rundict, force=False, verbose=0, oxi_int=False):
+    struct_data = rundict.structure_data
     if not force and struct_data[0].properties.get("E_mad", None) is not None:
         print("skipping")
         return True
-    poscar, potcar = [p.from_file(runDict.job_folder+f) for (p, f) in
+    poscar, potcar = [p.from_file(rundict.job_folder+f) for (p, f) in
                       [(Poscar, "/POSCAR"), (Potcar, "/POTCAR")]]
     s_dict = {}
     if verbose > 0:
         print("poscar/potcar parsed")
     if oxi_int:
-        oxi = runDict.structure.copy()
+        oxi = rundict.structure.copy()
         try:
             oxi.add_oxidation_state_by_guess()
         except ValueError:
@@ -281,20 +291,20 @@ def get_madelung_tag_single(runDict, force=False, verbose=0, oxi_int=False):
     if verbose > 0:
         print("bader oxidation state computed")
 
-    ew_sum = EwaldSummation(runDict.structure_data)
+    ew_sum = EwaldSummation(rundict.structure_data)
     # madelung_array = []
     struct_data.add_site_property("E_mad",
                                   [ew_sum.get_site_energy(i)
                                    for i in range(struct_data.num_sites)])
     s_dict["oxi_bader"] = struct_data
     print(" ".join(s_dict.values()))
-    return(True)
+    return True
 
 
 # ===== PLOTTING ======
 # =====================
 def plot_charge_and_mag(rundict_list, detailled=None, **kwargs):
-    """    
+    """
     plot charge and magmom for each specie of a starting structure
     then save them with proper name
     """
@@ -311,7 +321,8 @@ plotting charge and magmom
 0 = total charge only
 1 = site charges
 2 = site chg and mag,
-3 = chg & mag volumes ( < 0 to pass)\n
+3 = chg & mag volumes 
+( < 0 to pass)\n
             """)
             detailled = int(input("Level of verbosity ?   : "))
         except BaseException:
@@ -355,11 +366,11 @@ plotting charge and magmom
         if input(": ") == "s":
             prefix = input(" prefix ? : ")
             for f_name in figures.keys():
-                current_fig_name = read.get_file_name(
+                current_fig_name = platform_id.get_file_name(
                     os.getcwd(), "{}_{}".format(prefix, f_name), ext=".svg")
                 figures[f_name].savefig(
                     "{}.svg".format(current_fig_name),
                     bbox_inches='tight')
     except Exception:
         pass
-    return(True)
+    return True

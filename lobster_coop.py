@@ -25,12 +25,12 @@ from pymatgen.io.vasp import Vasprun
 from pymatgen.io.vasp.inputs import Incar
 from scipy.integrate import simps
 
-import structure_geometry_utils as cluster
 import DOS_plot as DOS
-import generic_plot
-import platform_id
 import readO2 as O2
 import readRun_entries as read
+import run_utils.generic_plot as generic_plot
+import run_utils.platform_id as platform_id
+import run_utils.structure_geometry_utils as cluster
 
 # import sys
 
@@ -157,7 +157,7 @@ def launch_COOP(folder, rerun=False):
 def make_COOP_dir(folder):
 
     COOP_dir = "{}/COOP".format(folder)
-    COOP_dir = read.get_file_name(folder, COOP_dir)
+    COOP_dir = platform_id.get_file_name(folder, COOP_dir)
     os.mkdir(COOP_dir)
     shutil.copy2('{}/INCAR'.format(folder), '{}/INCAR'.format(COOP_dir))
     shutil.copy2('{}/KPOINTS'.format(folder), '{}/KPOINTS'.format(COOP_dir))

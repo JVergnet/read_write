@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 import importlib
 import os
 import sys
@@ -10,15 +11,15 @@ import matplotlib.pyplot as plt
 import bailar_twist as bailar
 import DOS_plot as DOS
 import energy_surface as PES
-import generic_plot as generic_plot
 import lobster_coop as lob
 import nupdown_scan as nupdown
-import platform_id
 import read_hull as hull
 import readBader as bader
 import readO2 as O2
 import readRun_entries as read
-import filter_runs as filter_runs
+import run_utils.filter_runs as filter_runs
+import run_utils.generic_plot as generic_plot
+import run_utils.platform_id as platform_id
 
 print(matplotlib.get_backend())
 print(sys.version)
@@ -107,7 +108,7 @@ def single_analysis_routine(rundict_list, graph_type, x_coord, chem_env_done, ba
 
         elif graph_type == 'Bader':
             if bader_done:
-                bader.plot_charge_and_mag(rundict_list)
+                bader.plot_charge_and_mag(rundict_list, coord=x_coord)
             else:
                 print("Generate bader tags before plotting !!")
 

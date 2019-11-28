@@ -13,9 +13,10 @@ import sys
 from pymatgen.io.vasp.inputs import Kpoints
 from pymatgen.io.vasp.sets import MITRelaxSet
 
-import filter_runs
 import launchDisordered as launch
 import readRun_entries as read
+import run_utils.filter_runs as filter_runs
+import run_utils.platform_id as platform_id
 from drawKpoints import drawkpt
 
 
@@ -215,7 +216,7 @@ def main():
             print("error, default dirname to {}".format(dirname))
 
     if file_system in ["p", "s"]:
-        dirname_path = read.get_file_name(main_dir, dirname)
+        dirname_path = platform_id.get_file_name(main_dir, dirname)
     elif file_system in ["j"]:
         dirname_path = rerun_list[0].job_folder
 
@@ -375,7 +376,7 @@ def main():
 
         job.old_folder = job.job_folder
         if file_system == "j":
-            job.set_job_folder(read.get_file_name(dirname_path, dirname),
+            job.set_job_folder(platform_id.get_file_name(dirname_path, dirname),
                                explicit_jobpath=True)
         else:
             if file_system == "p":

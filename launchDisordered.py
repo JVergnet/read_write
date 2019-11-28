@@ -14,8 +14,9 @@ from pymatgen import Structure
 from pymatgen.core.periodic_table import Element
 from pymatgen.io.vasp.sets import MPRelaxSet
 
-import createStructureList as create_list
+import run_utils.createStructureList as create_list
 import readRun_entries as read
+import run_utils.platform_id as platform_id
 
 
 class Job(MPRelaxSet):
@@ -358,7 +359,8 @@ def generate_job_folders(final_job_list,
                          selective_dynamic=None):
     "Search and create a new parent dir and individual jobs dirs"
 
-    project_dir = read.get_file_name(parent_folder, project_name, ext="")
+    project_dir = platform_id.get_file_name(
+        parent_folder, project_name, ext="")
 
     print(project_dir)
     os.mkdir(project_dir)
@@ -623,7 +625,8 @@ def multi_distortion_desodiation_scan():
         cif_list, cif_folder, is_poscar=True)
     # [ {'structure' : O2 , "id" : "O2 } ]
     print(pristine_stackings)
-    project_dir = read.get_file_name(parent_folder, project_name, ext="")
+    project_dir = platform_id.get_file_name(
+        parent_folder, project_name, ext="")
 
     os.mkdir(project_dir)
     os.chdir(project_dir)

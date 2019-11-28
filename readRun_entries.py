@@ -19,8 +19,9 @@ from pymatgen.io.vasp.inputs import Incar
 from pymatgen.io.vasp.outputs import Oszicar  # Outcar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
-import platform_id
-import structure_geometry_utils as cluster
+import run_utils.platform_id as platform_id
+
+import run_utils.structure_geometry_utils as cluster
 import nupdown_scan as nupdown
 
 global PARAM
@@ -401,7 +402,7 @@ def collect_valid_runs(mainFolder, checkDiff=False,
 
 def write_log_file(rundict_list, log_folder):
 
-    log_file_name = get_file_name(PARAM['mainFolder'], "log")
+    log_file_name = platform_id.get_file_name(PARAM['mainFolder'], "log")
     os.chdir(log_folder)
     # log_file = open(logFileName,"a")
     if input("print runs name & energies ?[Y]") == "Y":
@@ -456,21 +457,6 @@ def get_equiv_site_list(structure):
     return equivalent_sites
 
 
-def get_file_name(folder, name, ext=""):
-    """
-    create a unique filename by adding
-    incremental suffix to the name in argument
-    """
-    k = 0
-    basis = os.path.join(folder, name) + "_"
-    file_name = basis + str(k)
-    while os.path.exists(file_name + ext):
-        k += 1
-        file_name = basis + str(k)
-        print(file_name)
-    return file_name
-
-
 def initialize(working_dir):
     global PARAM
 
@@ -486,7 +472,7 @@ def initialize(working_dir):
     print("\n preparing the run with the following parameters :\n{} \n\n".
           format(PARAM))
 
-    log_file_name = get_file_name(PARAM['mainFolder'], "log")
+    log_file_name = platform_id.get_file_name(PARAM['mainFolder'], "log")
     logging.basicConfig(filename=log_file_name, level=logging.DEBUG)
     logging.info('Started')
 

@@ -11,10 +11,13 @@ from matplotlib.ticker import (AutoMinorLocator, FormatStrFormatter,
 
 import platform_id
 import read_hull as hull
-import readRun_entries as read
 
 
 def set_mpl_rc_params():
+    set_mpl_rc_params_paper()
+
+
+def set_mpl_rc_params_large():
     mpl.rcParams['font.family'] = 'sans-serif'
     mpl.rcParams['font.sans-serif'] = ['Arial', 'Helvetica']
     mpl.rcParams['axes.labelsize'] = 25
@@ -33,53 +36,59 @@ def set_mpl_rc_params_paper():
 
 
 def minor_locator():
-    return(AutoMinorLocator(n=2))
+    return AutoMinorLocator(n=2)
+
+
+def cm2inch(*tupl):
+    inch = 2.54
+    if isinstance(tupl[0], tuple):
+        return tuple(i/inch for i in tupl[0])
+    else:
+        return tuple(i/inch for i in tupl)
 
 
 def major_locator():
     # , steps = [1,5]))
-    return(MaxNLocator(nbins=5, steps=[1, 2, 5], min_n_ticks=3))
+    return MaxNLocator(nbins=5, steps=[1, 2, 5], min_n_ticks=3)
 # def 2_digit_formatter():
 #     return(FormatStrFormatter("%
 
 # MultipleLocator(0.05)
 
 
-def plot_site_value_evolution(
-        sorted_entries,
-        specie,
-        value='charge',
-        coord="x_na",
-        plot_type=None,
-        axe0=None):
-    # get the value (charge or  magmom) of each site of a given specie
-    # for each structure along the deintercalation path
-    # plot them on a graph
-    # each site individually and in average (accounting for site multiplicity)
-    # plot_type = array of in representing plotting options in PLOT_TYPE_LIST
-    # eg : plot_type = [0,1] for avg and persite plotting
+def plot_site_value_evolution(sorted_entries, specie,
+                              value='charge', coord="x_na",
+                              plot_type=None, axe0=None):
+    """get the value (charge or  magmom) of each site of a given specie
+    for each structure along the deintercalation path
+    plot them on a graph
+    each site individually and in average (accounting for site multiplicity)
+    plot_type = array of in representing plotting options in PLOT_TYPE_LIST
+    eg : plot_type = [0,1] for avg and persite plotting"""
+
     set_mpl_rc_params()
 
-    PLOT_TYPE_LIST = ["per_site", "average", "min", "max", "sum"]
+    plot_types = ["per_site", "average", "min", "max", "sum"]
 
     if plot_type is None:
         plot_type = set()
         print(" \nPlotting type for {} of {} : \n {}\n "
-              .format(value, specie, PLOT_TYPE_LIST))
+              .format(value, specie, plot_types))
         while True:
             try:
                 plot_type.add(int(input(
                     "type plot type number or [Q]uit : ")))
                 print("plot type choice  {}".format(
-                    [PLOT_TYPE_LIST[n] for n in plot_type]))
+                    [plot_types[n] for n in plot_type]))
             except Exception as ex:
                 print("selection finished")
                 continue
 
-    plot_type_str = [PLOT_TYPE_LIST[n] for n in plot_type]
+    plot_type_str = [plot_types[n] for n in plot_type]
 
     if axe0 is None:
-        fig = plt.figure("{} of {}".format(value, specie))
+        fig = plt.figure("{} of {}".format(value, specie),
+                         figsize=cm2inch(6, 6))
         # fig.suptitle("{} evolution of {}".format(value,specie),
         #              fontsize="large")
         axe = fig.add_subplot(1, 1, 1)
@@ -105,11 +114,11 @@ def plot_site_value_evolution(
 
         for i, run in enumerate(rundict_list):
             try:
-                nbSpecie = len(run.structure.indices_from_symbol(specie))
+                nb_specie = len(run.structure.indices_from_symbol(specie))
                 # runDict["x_na"]= round(D["Na"]/nbCell , 2)
                 # nbCell = run.nb_cell
                 # print("nb cell : {}    nb specie  : {} " .format(nbCell , nbSpecie ) )
-                if nbSpecie > 0:
+                if nb_specie > 0:
                     x = i if coord is None else getattr(run, coord)
                     Ysum = 0
                     Y_min = 1e10
@@ -125,7 +134,7 @@ def plot_site_value_evolution(
                         Y_max = max(Y_max, site.properties[value])
                         # print(Ym)
                     Y_sum_list.append(Ysum / run.nb_cell)
-                    Y_mean_list.append(Ysum / nbSpecie)
+                    Y_mean_list.append(Ysum / nb_specie)
                     Y_min_list.append(Y_min)
                     Y_max_list.append(Y_max)
                     X.append(x)
@@ -138,7 +147,7 @@ def plot_site_value_evolution(
                         ex, run.nameTag))
 
         if "per_site" in plot_type_str:
-            axe.scatter(X_all_sites, Y_all_sites,  color="black",
+            axe.scatter(X_all_sites, Y_all_sites, color="black",
                         s=12, label="per site {}".format(stack))
         if "average" in plot_type_str:
             axe.plot(X, Y_mean_list, linewidth=1.0, linestyle="--",
@@ -170,16 +179,16 @@ def plot_site_value_evolution(
         axe.xaxis.set_major_formatter(FormatStrFormatter('%.1f'))
     else:
         # axe.xaxis.set_major_locator(MultipleLocator(1))
-        labels = [r.nameTag for r in rundict_list]
+        labels = [r.name_tag for r in rundict_list]
         positions = [i for i in range(len(rundict_list))]
         # axe.set_xticklabels(labels)
         plt.xticks(positions, labels, rotation='horizontal')
 
     if axe0 is None:
         plt.show(block=False)
-        return(fig)
+        return fig
     else:
-        return(axe0)
+        return axe0
 
 
 def plot_structure_value_evolution(
@@ -207,15 +216,16 @@ def plot_structure_value_evolution(
     clean_entries = [d for d in sorted_entries if d.status == 4]
     hull_entries = [d for d in sorted_entries if d.status >= 5]
 
-    for i, prop in enumerate(prop_list):
-        plotTitle = prop + legend
+    for prop in prop_list:
+        plot_title = prop + legend
 
-        fig = plt.figure(plotTitle)
-        fig.suptitle(plotTitle, fontsize="large")
+        fig = plt.figure(plot_title)
+        fig.suptitle(plot_title)
         axe = fig.add_subplot(1, 1, 1)
 
         if x_na_coords == "name":
-            # X_Y_name = np.array([ [ i,s.get(prop, 0),s["nameTag"] ] for (i,s) in enumerate(converged_entries)
+            # X_Y_name = np.array([ [ i,s.get(prop, 0),s["nameTag"] ]  \
+            # for (i,s) in enumerate(converged_entries)
             #                 if (s.get(prop, None) is not None ) ] )
             #print(X , Y)
             #axe.yaxis.set_major_formatter(FuncFormatter(lambda x, loc: "{:.2f}".format(x) ) )
@@ -240,18 +250,18 @@ def plot_structure_value_evolution(
                     [s for s in sorted_entries if s.stacking == stack])
                 if x_na_coords == "x_na":
                     stack_list = hull.generate_hull_entries(stack_list)
-                    X_Y = np.array([[s.x_na, getattr(s, prop)] for s in stack_list
+                    x_y = np.array([[s.x_na, getattr(s, prop)] for s in stack_list
                                     if (s.status >= 4 and hasattr(s, prop))])
                     # print(X , Y)
-                    axe.plot(X_Y[:, 0], X_Y[:, 1], "o--",
+                    axe.plot(x_y[:, 0], x_y[:, 1], "o--",
                              label="minimal {}".format(stack))
 
-                X_Y = np.array([[getattr(s, x_na_coords), getattr(s, prop)]
+                x_y = np.array([[getattr(s, x_na_coords), getattr(s, prop)]
                                 for s in stack_list
                                 if (s.status == 3 and hasattr(s, prop))])
                 # print(X , Y)
                 try:
-                    axe.plot(X_Y[:, 0], X_Y[:, 1], "x",
+                    axe.plot(x_y[:, 0], x_y[:, 1], "x",
                              label="non-min {}".format(stack))
                 except Exception as ex:
                     print(ex)
@@ -260,11 +270,11 @@ def plot_structure_value_evolution(
                         (hull_entries, "black", "on hull"),
                         (clean_entries, "red", "off-hull minimum")]:
                     try:
-                        X_Y = np.array([[s.x_na, getattr(s, prop)]
+                        x_y = np.array([[s.x_na, getattr(s, prop)]
                                         for s in entries
                                         if hasattr(s, prop)])
-                        X = X_Y[:, 0]
-                        Y = X_Y[:, 1]
+                        X = x_y[:, 0]
+                        Y = x_y[:, 1]
                         axe.scatter(X, Y,
                                     s=180,
                                     facecolors='white',
@@ -284,14 +294,14 @@ def plot_structure_value_evolution(
 
 #        plt.show(block=False)
 #        save_fig(fig,plotTitle)
-    return(fig)
+    return fig
 
 
-def save_fig(fig, plotTitle, save_mode=None, folder=None):
-    figName = None
+def save_fig(fig, plot_title, save_mode=None, folder=None):
+    fig_name = None
     if save_mode is None:
         save_mode = input(
-            "Type [s]ave to save {0} ([d]efault name) \n".format(plotTitle))
+            "Type [s]ave to save {0} ([d]efault name) \n".format(plot_title))
 
     if folder is None:
         folder = os.path.join(platform_id.local_cluster_dir(), "figures")
@@ -301,20 +311,20 @@ def save_fig(fig, plotTitle, save_mode=None, folder=None):
 
     try:
         if save_mode[0] == "s":
-            figName = input("Type the file name (SVG format) : ")
+            fig_name = input("Type the file name (SVG format) : ")
 
         elif save_mode[0] == "d":
 
-            figName = read.get_file_name(
-                folder, plotTitle.replace(
+            fig_name = platform_id.get_file_name(
+                folder, plot_title.replace(
                     ' ', '_'), ext=".svg")
-            print("default name : {}".format(figName))
+            print("default name : {}".format(fig_name))
             #print(os.getcwd(), param['mainFolder'])
     except IndexError:
         print("option not recognized, figure not saved")
 
-    if figName is not None:
-        fig.savefig("{}.svg".format(figName), bbox_inches='tight')
-        print("{} saved in {}".format(figName.split("/")[-1], folder))
+    if fig_name is not None:
+        fig.savefig("{}.svg".format(fig_name), bbox_inches='tight')
+        print("{} saved in {}".format(fig_name.split("/")[-1], folder))
 
-    return(figName)
+    return fig_name
