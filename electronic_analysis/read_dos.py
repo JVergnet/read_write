@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pymatgen.electronic_structure.core import OrbitalType, Spin
 
-import utils.generic_plot as generic_plot
+import rw_utils.generic_plot as generic_plot
 
 # import pymatgen.analysis.diffraction.xrd as xrd
 

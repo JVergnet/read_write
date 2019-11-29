@@ -22,8 +22,8 @@ from pymatgen.io.vasp.outputs import Oszicar  # Outcar
 # from pymatgen.io.vasp.outputs import Oszicar
 from scipy.interpolate import griddata
 
-import utils.generic_plot as g_plot
-import utils.platform_id as platform_id
+import rw_utils.generic_plot as g_plot
+import rw_utils.platform_id as platform_id
 
 # from skimage import measure
 

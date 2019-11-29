@@ -28,8 +28,8 @@ from scipy.integrate import simps
 import electronic_analysis.read_dos as DOS
 import electronic_analysis.readO2 as O2
 import electronic_analysis.readRun_entries as read
-import utils.generic_plot as generic_plot
-import utils.platform_id as platform_id
+import rw_utils.generic_plot as generic_plot
+import rw_utils.platform_id as platform_id
 import structure_analysis.structure_geometry_utils as cluster
 
 # import sys

@@ -19,7 +19,7 @@ from pymatgen.io.vasp.inputs import Incar
 # from pymatgen.io.vasp.outputs import Oszicar  # Outcar
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
-import utils.platform_id as platform_id
+import rw_utils.platform_id as platform_id
 
 import structure_analysis.structure_geometry_utils as cluster
 

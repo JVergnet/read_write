@@ -25,5 +25,5 @@ These high-level scripts rely on 2 main subpackages :
 
  -- post-run analysis, which involves also the electronic properties (subpackage electronic _analysis)
 
- -- utils & filtering subpackages help for all these functions  
+ -- rw_utils & filtering subpackages help for all these functions  
 

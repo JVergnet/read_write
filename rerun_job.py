@@ -16,7 +16,7 @@ from pymatgen.io.vasp.sets import MITRelaxSet
 import write_job as launch
 import electronic_analysis.readRun_entries as read
 import filtering_runs.filter_runs as filter_runs
-import utils.platform_id as platform_id
+import rw_utils.platform_id as platform_id
 from structure_analysis.drawKpoints import drawkpt
 
 

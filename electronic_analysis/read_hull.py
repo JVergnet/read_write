@@ -9,7 +9,7 @@ from matplotlib.ticker import AutoMinorLocator
 
 # from operator import itemgetter
 # import readRun_entries as read
-import utils.generic_plot as generic_plot
+import rw_utils.generic_plot as generic_plot
 from filtering_runs import filter_runs
 
 # HULL RELATED GRAPHS

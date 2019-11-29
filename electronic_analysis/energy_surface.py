@@ -16,7 +16,7 @@ from electronic_analysis import readRun_entries as read
 
 from structure_analysis import bailar_twist as bailar
 
-from utils import generic_plot
+from rw_utils import generic_plot
 from filtering_runs import filter_runs
 # from scipy.interpolate import griddata
 

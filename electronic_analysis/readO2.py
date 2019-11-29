@@ -12,8 +12,8 @@ from pymatgen.io.vasp.outputs import Oszicar
 
 import write_job as launch
 import electronic_analysis.readRun_entries as read
-import utils.generic_plot as generic_plot
-import utils.platform_id as platform_id
+import rw_utils.generic_plot as generic_plot
+import rw_utils.platform_id as platform_id
 
 
 def O2_computation(dosList, bader_done=False):

@@ -16,7 +16,7 @@ from pymatgen.io.vasp.sets import MPRelaxSet
 
 import electronic_analysis.readRun_entries as read
 import structure_analysis.createStructureList as create_list
-import utils.platform_id as platform_id
+import rw_utils.platform_id as platform_id
 
 
 class Job(MPRelaxSet):
@@ -25,7 +25,7 @@ class Job(MPRelaxSet):
         Holds and modifies VASP inputs (Structure, INCAR, Kpoint,...)
         before writing the files in the folder
 
-        uses MPRelaxSet .__init_ & .write to create files"""
+        lazy use of MPRelaxSet .__init__ & .write to create files"""
 
     @property
     def structure(self):

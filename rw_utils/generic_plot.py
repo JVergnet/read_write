@@ -9,7 +9,7 @@ from matplotlib.ticker import (AutoMinorLocator, FormatStrFormatter,
                                FuncFormatter, MaxNLocator, MultipleLocator,
                                StrMethodFormatter)
 
-import utils.platform_id as platform_id
+import rw_utils.platform_id as platform_id
 from filtering_runs import filter_runs
 
 

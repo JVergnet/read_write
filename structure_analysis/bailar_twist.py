@@ -18,7 +18,7 @@ from matplotlib.ticker import FormatStrFormatter
 from pymatgen.analysis.chemenv.coordination_environments.coordination_geometry_finder import \
     LocalGeometryFinder
 
-import utils.generic_plot as generic_plot
+import rw_utils.generic_plot as generic_plot
 
 try:
     import electronic_analysis.PES_complex_plot as PES_plot

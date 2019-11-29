@@ -20,8 +20,8 @@ import electronic_analysis.readRun_entries as read
 import structure_analysis.bailar_twist as bailar
 
 import filtering_runs.filter_runs as filter_runs
-import utils.generic_plot as generic_plot
-import utils.platform_id as platform_id
+import rw_utils.generic_plot as generic_plot
+import rw_utils.platform_id as platform_id
 
 print(matplotlib.get_backend())
 print(sys.version)
