@@ -213,7 +213,7 @@ def get_pristine_list(structure_files, cif_folder, is_poscar=False):
             name = file_name.split(".")[-1]
         print("Structure raw file : ", file_name)
         pristine_struct = Structure.from_file(file_name)
-        pristine_struct.make_supercell([1, 1, 3], to_unit_cell=True)
+        pristine_struct.make_supercell([1, 1, 1], to_unit_cell=True)
         # pristineStruct.replace_species({"Na": "Li"})
         pristine_job_list.append(Job(pristine_struct,
                                      name))

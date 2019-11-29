@@ -155,10 +155,10 @@ def main():
 
     rerun_type, incar_type = prompt_rerun_type()
 
-    rerun_select = input(
+    select_converged_runs = input(
         "Rerun [a]ll / [n]on-converged only / [c] converged-only ? : ")
     # do not parse vasprun if all job selected
-    check_vasprun = 0 if rerun_select in ["a"] else 0.9
+    check_vasprun = 0 if select_converged_runs in ["a"] else 0.9
 
     try:
         file_system = input("[j]ob / [p]roject / [s]uper_project ?  :  ")[0]
@@ -175,13 +175,13 @@ def main():
     unconverged_jobs = [d for d in run_list if d.status < 3]
 
     # when reruning all jobs, they are all considered as unconverged
-    if rerun_select in ["a", "n"]:
+    if select_converged_runs in ["a", "n"]:
         rerun_list = unconverged_jobs
 
-    elif rerun_select in ["c"]:
+    elif select_converged_runs in ["c"]:
         rerun_list = converged_jobs
 
-    rerun_list = filtering_runs(rerun_select, rerun_list)
+    rerun_list = filtering_runs(select_converged_runs, rerun_list)
 
     print("number of valid jobs to rerun : {}".format(len(rerun_list)))
 
@@ -224,7 +224,6 @@ def main():
 
         # create Job from a RunDict
         job = launch.Job.from_rundict(rundict)
-        # s = job.structure
 
         files_to_copy = []
         incar = {}

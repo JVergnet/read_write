@@ -1,21 +1,22 @@
-# launch_all_jobs_in_projectFolder.py
-# Convenient method to launch all the jobs in a prepared project folder
-# INPUT : path of the folder where the prepared vasp inputs are
-# output :
+# launch_job.py
+"""Convenience method to launch all the jobs in a prepared project folder
+INPUT : path of the folder where the prepared vasp inputs are
+"""
 
 import subprocess
 import os
 import sys
+from utils.platform_id import setting_dir
 
 
-def main(settingDir):
+def main(init_dir):
 
     params = {}
 
     if len(sys.argv) > 1:
-        projectFolder = sys.argv[1]
+        project_folder = sys.argv[1]
     else:
-        projectFolder = os.getcwd()
+        project_folder = os.getcwd()
 
     name = input("Name of the job ? : \n")
     print("Base name : {} \n".format(name))
@@ -23,7 +24,7 @@ def main(settingDir):
 
     num_nodes = 1
     try:
-        num = eval(input('num nodes  / job ?'))
+        num = int(input('num nodes  / job ?'))
         if num > 0 and num <= 8:
             num_nodes = num
     except Exception:
@@ -37,10 +38,10 @@ def main(settingDir):
     except Exception:
         pass
 
-    params['jobFileName'] = os.path.join(settingDir, "vasp_job")
+    params['jobFileName'] = os.path.join(init_dir, "vasp_job")
 
-    jobChoice = input("job type : [s]ingle_run / [d]ouble_run ?\n")
-    if jobChoice == "d":
+    job_choice = input("job type : [s]ingle_run / [d]ouble_run ?\n")
+    if job_choice == "d":
         params['jobFileName'] += "_double"
     else:
         params['jobFileName'] += "_single"
@@ -61,39 +62,39 @@ def main(settingDir):
         # os.chdir(projectFolder)
 
         # Create a list of all the subfolder of the run
-        params['workdir'] = "--workdir {}".format(projectFolder)
-        d = projectFolder
-        subDirList = [os.path.join(d, o) for o in os.listdir(d)
-                      if os.path.isdir(os.path.join(d, o))]
-        print("Nb jobs to run : {}".format(len(subDirList)))
-        maxJob = eval(input("Nb of parallel job(max) ? [0-10] \n"))
-        if maxJob < 0:
+        params['workdir'] = "--workdir {}".format(project_folder)
+        sub_dir = project_folder
+        subdir_list = [os.path.join(sub_dir, o) for o in os.listdir(sub_dir)
+                       if os.path.isdir(os.path.join(sub_dir, o))]
+        print("Nb jobs to run : {}".format(len(subdir_list)))
+        max_job = int(input("Nb of parallel job(max) ? [0-10] \n"))
+        if max_job < 0:
             print(" <<< SKY IS THE LIMIT >>> My man !  !")
-            maxJob = 99
-        elif maxJob > 10:
+            max_job = 99
+        elif max_job > 10:
             print("too many cores !")
             exit(1)
 
-        array_size = len(subDirList)
-        params['array'] = "--array=1-{}%{}".format(array_size, maxJob)
+        array_size = len(subdir_list)
+        params['array'] = "--array=1-{}%{}".format(array_size, max_job)
         subprocess.call(['sbatch {name} {num_nodes} {array} {workdir} {QOS} {jobFileName}'
                          .format(**params)],
                         shell=True)
 
     else:
         # Walk trhough the folders to find valid vasp inputs
-        d = projectFolder
-        subDirList = [os.path.join(d, o) for o in os.listdir(d)
-                      if os.path.isdir(os.path.join(d, o))]
+        sub_dir = project_folder
+        subdir_list = [os.path.join(sub_dir, o) for o in os.listdir(sub_dir)
+                       if os.path.isdir(os.path.join(sub_dir, o))]
         print("Individually chose to run the following folders ? \n",
               "select [OK / NO ] \n")
 
-        for i, jobFolder in enumerate(subDirList):
-            params['workdir'] = "--workdir {}".format(jobFolder)
+        for job_folder in subdir_list:
+            params['workdir'] = "--workdir {}".format(job_folder)
 
             run = False
             try:
-                choice = input("launch {}? :".format(jobFolder))
+                choice = input("launch {}? :".format(job_folder))
                 print(choice)
                 if choice in ["OK", "O", "o", "Ok"]:
                     run = True
@@ -103,21 +104,20 @@ def main(settingDir):
             if run:
                 subprocess.call([
                     'sbatch {name} {num_nodes} {workdir} {QOS} {jobFileName}'
-                    .format(**params)],
-                    shell=True)
+                    .format(**params)], shell=True)
 
                 print("\n")
             else:
-                longName = jobFolder.split("/")[-1].split("__")
-                shortName = longName[0][:4] + "_" + longName[-1][:3]
+                long_name = job_folder.split("/")[-1].split("__")
+                short_name = long_name[0][:4] + "_" + long_name[-1][:3]
                 print(
-                    " No job launched for {0} in {1} :-( \n".format(shortName,
+                    " No job launched for {0} in {1} :-( \n".format(short_name,
                                                                     params['jobFileName']))
 
-        os.chdir(projectFolder)
+        os.chdir(project_folder)
 
 
 if __name__ == '__main__':
-    from utils.platform_id import setting_dir
-    settingDir = os.path.join(setting_dir(), "job_scripts")
-    main(settingDir)
+
+    SETTING_DIR = os.path.join(setting_dir(), "job_scripts")
+    main(SETTING_DIR)
