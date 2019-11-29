@@ -270,8 +270,8 @@ def plot_nelect_heatmap(input_rundict_list):
     """
     attr_x = "nelect"
     attr_y = "doo"
-    landscapes_to_draw = [("S", "charge", "mean", "Reds"),
-                          ("H", "charge", "mean", "Blues")]
+    landscapes_to_draw = [("O", "charge", "min", "Reds"),
+                          ("O", "charge", "max", "Blues")]
 
     rundict_list = ([d for d in input_rundict_list if (
         d.status >= 3)])
