@@ -19,7 +19,7 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
 from matplotlib.figure import Figure
 
 import electronic_analysis.read_hull as hull
-import electronic_analysis.readRun_entries as readRun
+import electronic_analysis.read_rundict as readRun
 import Read_Run_pages as pages
 
 matplotlib.use("TkAgg")

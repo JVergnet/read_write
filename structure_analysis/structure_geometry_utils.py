@@ -11,7 +11,7 @@ from pymatgen.transformations.standard_transformations import \
 
 # import math
 # import os
-# import readRun_entries as read
+# import read_rundict as read
 
 
 def get_min_OO_dist(s):

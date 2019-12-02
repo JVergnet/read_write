@@ -12,7 +12,7 @@ from mpl_toolkits.mplot3d import Axes3D  # , axes3d
 
 from electronic_analysis import PES_complex_plot
 
-from electronic_analysis import readRun_entries as read
+from electronic_analysis import read_rundict as read
 
 from structure_analysis import bailar_twist as bailar
 

@@ -91,8 +91,9 @@ class Rundict(ComputedStructureEntry):
         self.stacking = job_folder.split('/')[-2]
         self.str_id = job_folder.split('/')[-1].split("__")[-1]
         if c_e is not None:
+            energy = 1000000 if status <= 1 else c_e.energy
             ComputedStructureEntry.__init__(self,
-                                            c_e.structure, c_e.energy,
+                                            c_e.structure, energy,
                                             correction=c_e.correction,
                                             parameters=c_e.parameters,
                                             data=c_e.data,
@@ -282,7 +283,13 @@ def collect_single_folder(job_folder, drone=None, vasprun_parsing_lvl=1):
                 incar = Incar.from_file(
                     '{}/INCAR'.format(job_folder)).as_dict()
                 c_e.parameters.update({"incar": incar})
-                status = 2 if c_e.energy < 10000000 else 1
+                try:
+                    status = 2 if c_e.energy < 10000000 else 1
+                except TypeError as ex:
+                    print("exception caught", ex)
+                    # c_e.energy = 10000000
+                    status = 1  # if there is an error, the run didn't converge
+
             # default energy of parser when ozscicar not read
             # to distinguish "pre-runs" from corrupted / suppressed vasprun
 

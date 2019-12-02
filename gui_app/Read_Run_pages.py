@@ -18,7 +18,7 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
 from electronic_analysis import read_dos as DOS
 from electronic_analysis import read_hull as hull
 from electronic_analysis import read_bader as bader
-# import readRun_entries as readRun
+# import read_rundict as readRun
 from rw_utils import generic_plot
 from filtering_runs import filter_runs
 

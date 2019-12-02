@@ -15,7 +15,7 @@ import electronic_analysis.read_dos as DOS
 import electronic_analysis.read_hull as hull
 import electronic_analysis.read_mag_props as nupdown
 import electronic_analysis.readO2 as O2
-import electronic_analysis.readRun_entries as read
+import electronic_analysis.read_rundict as read
 
 import structure_analysis.bailar_twist as bailar
 

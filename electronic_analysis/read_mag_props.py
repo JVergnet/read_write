@@ -15,7 +15,7 @@ import numpy as np
 # from mpl_toolkits.axes_grid1 import AxesGrid
 # from matplotlib.gridspec import GridSpec
 # personnal libraries
-# import readRun_entries as read
+# import read_rundict as read
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pymatgen.io.vasp.outputs import Oszicar  # Outcar
 # pymatgen libraries
@@ -265,8 +265,7 @@ def plot_mag_heatmap(selected_runs):
 
 def plot_nelect_heatmap(input_rundict_list):
     """
-    specific caller to plot_abstract_heatmap
-    draw nelect vs doo energy heatmap and other bader heatmaps
+    draw energy and other bader qty as fct of nelect (x) & doo (y)
     """
     attr_x = "nelect"
     attr_y = "doo"

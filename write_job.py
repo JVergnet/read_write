@@ -14,7 +14,7 @@ from pymatgen import Structure
 from pymatgen.core.periodic_table import Element
 from pymatgen.io.vasp.sets import MPRelaxSet
 
-import electronic_analysis.readRun_entries as read
+import electronic_analysis.read_rundict as read
 import structure_analysis.createStructureList as create_list
 import rw_utils.platform_id as platform_id
 
@@ -442,8 +442,9 @@ def main():
 
     print(" working in {}".format(cif_folder))
 
-    file_list = [f for f in os.listdir(cif_folder) if (
-        f.endswith('POSCAR') or f.endswith('cif'))]
+    file_list = [f for f in os.listdir(cif_folder)
+                 if (os.path.isfile(f) and
+                     (f.endswith('POSCAR') or f.endswith('cif')))]
 
     if len(file_list) > 0:
         print("found {} \n ".format(file_list))
@@ -470,9 +471,18 @@ def main():
         # for entry in pristine_job_list :
         #     entry["structure"].remove_oxidation_states()
         #     entry["structure"].remove_species([Element("Na")])
+    na_mg_mn_o_2_li_ti_s = {Element("Na"): Element("Li"),
+                            Element("Mg"): Element("Li"),
+                            Element("Mn"): Element("Ti"),
+                            Element("O"): Element("S")}
 
-    # for r in pristine_job_list:
-    #     r['structure'].remove_site_property('selective_dynamics')
+    li_ti_s_2_li_mn_o = {Element("Na"): Element("Li"),
+                         Element("Mg"): Element("Li"),
+                         Element("Ti"): Element("Mn"),
+                         Element("S"): Element("O")}
+
+    for r in pristine_job_list:
+        r.structure.replace_species(li_ti_s_2_li_mn_o)
 
     job_list = get_complete_structure_list(
         pristine_job_list)

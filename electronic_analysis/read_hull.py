@@ -8,7 +8,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.ticker import AutoMinorLocator
 
 # from operator import itemgetter
-# import readRun_entries as read
+# import read_rundict as read
 import rw_utils.generic_plot as generic_plot
 from filtering_runs import filter_runs
 

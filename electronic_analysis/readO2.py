@@ -11,7 +11,7 @@ from operator import itemgetter
 from pymatgen.io.vasp.outputs import Oszicar
 
 import write_job as launch
-import electronic_analysis.readRun_entries as read
+import electronic_analysis.read_rundict as read
 import rw_utils.generic_plot as generic_plot
 import rw_utils.platform_id as platform_id
 
