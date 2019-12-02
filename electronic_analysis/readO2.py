@@ -54,11 +54,10 @@ def get_O2_tag_single(runDict):
 
 
 def remove_O2(vaspRundictList, nb_sites=1, redundancy=None):
-
-    # for each structure given in argument,
-    # remove the most oxidized oxygen
-    # and create a VASP input folder in the job folder
-    # option for redundancy to generate a larger supercell
+    """    for each structure given in argument,
+    remove the most oxidized oxygen
+    and create a VASP input folder in the job folder
+    option for redundancy to generate a larger supercell"""
 
     if redundancy is None:
         if input("redundancy ? Y/N")[0] == "Y":
@@ -69,52 +68,38 @@ def remove_O2(vaspRundictList, nb_sites=1, redundancy=None):
     folder_list = []
 
     for run in vaspRundictList:
-        structure_list = []
-        parentDir = run['folder']
-        projectName = "O_deficient"
-        print("removing O from {}".format(parentDir))
-        # print(run["equivSiteList"])
+        parent_path = os.path.join(run.job_folder, "O_deficient")
+        print("removing O from {}".format(run.str_id))
 
         for O_index in labile_O_indices(run, nb_sites):
             print("removed O index : {}".format(O_index))
-            O_deficient_structure = run['vaspRun'].final_structure.copy()
-            O_deficient_structure.remove_sites([O_index])
-            structure_list.append({'structure': O_deficient_structure,
-                                   "id": "rem_O{}".format(O_index)})
+            job = launch.Job.from_rundict(run)
+            job.structure.remove_sites([O_index])
+            job.entry_id = "{}_rem_O{}".format(job.entry_id, O_index)
+            folder_list.append(
+                job.set_job_folder(parent_path, explicit_jobpath=False))
+            job.write_data_input()
+
             if redundancy:
-                big_struct = run['vaspRun'].final_structure.copy()
-                big_struct.make_supercell([1, 2, 1])
-                structure_list.append({'structure': big_struct,
-                                       "id": "rem_O{}_big".format(O_index)})
-
-        # print("O deficient structure list\n {}".format(structure_list))
-
-        incar_default = launch.default_incar()
-
-        vasp_input_set_list = launch.get_inputSet_list(structure_list,
-                                                       incar_default,
-                                                       VdW=False, scan_U=False,
-                                                       oxyde=False)
-
-        sub_folder_list = launch.generate_job_folders(vasp_input_set_list,
-                                                      parentDir,
-                                                      projectName)
-        folder_list += [os.path.join(run['folder'], sub_folder)
-                        for sub_folder in sub_folder_list]
+                job = launch.Job.from_rundict(run)
+                job.structure.make_supercell([1, 2, 1])
+                job.entry_id = "{}_big".format(job.entry_id)
+                folder_list.append(
+                    job.set_job_folder(parent_path, explicit_jobpath=False))
+                job.write_data_input()
 
     for folder in folder_list:
-        settingDir = platform_id.setting_dir()
-        jobFileName = os.path.join(
-            settingDir, "job_scripts", "vasp_job_double")
+        setting_dir = platform_id.setting_dir()
+        job_file_name = os.path.join(
+            setting_dir, "job_scripts", "vasp_job_double")
         name = "degaz_{}".format(abs(hash(folder)))
-        # workingDir = os.path.join(parentDir,folder)
         job_string = 'sbatch -J {} --workdir {}  {}'.format(
-            name, folder, jobFileName)
+            name, folder, job_file_name)
         if input(
                 "LAUNCH the following [Y/n] :\n{}\n".format(job_string)) == "Y":
             subprocess.call([job_string], shell=True)
 
-    return(folder_list)
+    return folder_list
 
 
 def get_O2_release_enthalpy(runDict):
@@ -148,13 +133,12 @@ def get_O2_release_enthalpy(runDict):
         print("no O_deficient converged run")
         return(None)
 
-    #print("valid run lst {}".format(run_list))
+    # print("valid run lst {}".format(run_list))
 
     # get the run with the lowest energy
     run_list = sorted(run_list, key=lambda x: x['vaspRun'].final_energy)
     o_def_vasprun = run_list[0]["vaspRun"]
     # ============= IN CASE OF VDW CORRECTION =========================
-    # TODO:
     E_no_vdw_O_def = Oszicar(
         run_list[0]['folder'] + "/OSZICAR").electronic_steps[-1][-1]["E"]
     # =================================================================
@@ -164,7 +148,7 @@ def get_O2_release_enthalpy(runDict):
     # E_no_vdw_O_def, E_plus_vdw_O_def, E_plus_vdw_O_def -  E_no_vdw_O_def  )
     # )
 
-    #nbO_final = len(o_def_vasprun.final_structure.indices_from_symbol("O"))
+    # nbO_final = len(o_def_vasprun.final_structure.indices_from_symbol("O"))
 
     E_plus_vdw_normal = runDict['etot']
     E_no_vdw_normal = Oszicar(
@@ -174,7 +158,7 @@ def get_O2_release_enthalpy(runDict):
     # E_no_vdw_normal, E_plus_vdw_normal, E_plus_vdw_normal -  E_no_vdw_normal
     # )  )
 
-    #nbO_init = len(runDict['structure'].indices_from_symbol("O"))
+    # nbO_init = len(runDict['structure'].indices_from_symbol("O"))
 
     # H = E(normal) - E(O_deficient) - 1/2 E(O2)
 
