@@ -15,7 +15,7 @@ from pymatgen.analysis.ewald import EwaldSummation
 from pymatgen.io.vasp.inputs import Poscar, Potcar
 
 
-# import read_rundict as read
+# import rundict_utils as read
 import rw_utils.platform_id as platform_id
 import rw_utils.generic_plot as g_plot
 

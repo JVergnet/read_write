@@ -1,6 +1,6 @@
 # readO2.py
 
-# read and write O2 release enthalpy related quantities
+"""read and write O2 release enthalpy related quantities"""
 
 
 import os
@@ -11,15 +11,15 @@ from operator import itemgetter
 from pymatgen.io.vasp.outputs import Oszicar
 
 import write_job as launch
-import electronic_analysis.read_rundict as read
+import electronic_analysis.rundict_utils as read
 import rw_utils.generic_plot as generic_plot
 import rw_utils.platform_id as platform_id
 
 
-def O2_computation(dosList, bader_done=False):
+def O2_computation(rundict_list, bader_done=False):
     vasp_run_poll = []
     with Pool(processes=cpu_count()) as p:
-        vasp_run_poll = p.map(get_O2_tag_single, dosList)
+        vasp_run_poll = p.map(get_O2_tag_single, rundict_list)
         p.close()
         p.join()
 
@@ -102,17 +102,22 @@ def remove_O2(vaspRundictList, nb_sites=1, redundancy=None):
     return folder_list
 
 
-def get_O2_release_enthalpy(runDict):
+def get_O2_release_enthalpy(rundict):
+    """ compare energies of normal and O deficient runs
+
+    check the existence of the O2 deficient vasp result in the run folder
+    get the run with the lowest energy
+    compare energies of normal and O deficient runs (w/ and wo/ WdW correction)
+    return H without VdW correction"""
 
     run_list = []
 
     # check the existence of the O2 deficient vasp result in the run folder
-    # print(runDict)
     o_deficient_list = [
         os.path.join(
-            runDict['folder'],
+            rundict.job_folder,
             f) for f in os.listdir(
-            runDict['folder']) if f.startswith("O_deficient")]
+            rundict.job_folder) if f.startswith("O_deficient")]
 
     if len(o_deficient_list) == 0:
         print("no O_deficient folder")
@@ -136,13 +141,12 @@ def get_O2_release_enthalpy(runDict):
     # print("valid run lst {}".format(run_list))
 
     # get the run with the lowest energy
-    run_list = sorted(run_list, key=lambda x: x['vaspRun'].final_energy)
-    o_def_vasprun = run_list[0]["vaspRun"]
+    run_list = sorted(run_list, key=lambda x: x.energy)
+    o_def_rundict = run_list[0]
     # ============= IN CASE OF VDW CORRECTION =========================
-    E_no_vdw_O_def = Oszicar(
-        run_list[0]['folder'] + "/OSZICAR").electronic_steps[-1][-1]["E"]
-    # =================================================================
-    E_plus_vdw_O_def = o_def_vasprun.final_energy
+    E_plus_vdw_O_def = o_def_rundict.energy
+    E_no_vdw_O_def = Oszicar(o_def_rundict.job_folder +
+                             "/OSZICAR").electronic_steps[-1][-1]["E"]
 
     # print("Energies 0 deficient : base {:.4f} // VDW {:.4f} (corr : {:.6f})".format(
     # E_no_vdw_O_def, E_plus_vdw_O_def, E_plus_vdw_O_def -  E_no_vdw_O_def  )
@@ -150,9 +154,9 @@ def get_O2_release_enthalpy(runDict):
 
     # nbO_final = len(o_def_vasprun.final_structure.indices_from_symbol("O"))
 
-    E_plus_vdw_normal = runDict['etot']
-    E_no_vdw_normal = Oszicar(
-        runDict['folder'] + "/OSZICAR").electronic_steps[-1][-1]["E"]
+    E_plus_vdw_normal = rundict.energy
+    E_no_vdw_normal = Oszicar(rundict.job_folder +
+                              "/OSZICAR").electronic_steps[-1][-1]["E"]
 
     # print("Energies : base {} // VDW {} (corr : {})".format(
     # E_no_vdw_normal, E_plus_vdw_normal, E_plus_vdw_normal -  E_no_vdw_normal
@@ -162,10 +166,10 @@ def get_O2_release_enthalpy(runDict):
 
     # H = E(normal) - E(O_deficient) - 1/2 E(O2)
 
-    # runDict['ediff'] = runDict['etot'] / runDict["nb_cell"]
+    # runDict['ediff'] = runDict.energy_per_fu / runDict["nb_cell"]
     # eV  -9.8897568 (no Wdv energy from dft O2 ) + 1.36 (ceder correction)
     EO2 = -8.52
-    print("{}\n".format(runDict["nameTag"]))
+    print("{}\n".format(rundict.name_tag))
     for VDW, E_normal, E_O_def in \
         [("with VdW correction", E_plus_vdw_normal, E_plus_vdw_O_def),
          ("without VdW correction", E_no_vdw_normal, E_no_vdw_O_def)]:
@@ -174,25 +178,21 @@ def get_O2_release_enthalpy(runDict):
 
         print(
             "{} \nE_O_def   + 1/2.EO2 - E_normal  =  H \n{:.5f} + {:.5f} - 1/2.{:.5f} = {:.5f} " .format(
-                VDW,
-                E_O_def,
-                EO2,
-                E_normal,
-                H))
+                VDW, E_O_def, EO2, E_normal, H))
 
         # H = 2*H # normalized by O2 molecules
 
     # return H without VdW correction
-    return(H)
+    return H
 
 
-def labile_O_indices(dictStruct, nb_sites=1):
-    # returns the indices of the N non-equivalent oxygen positions
-    # with the lowest bader charge (most oxydized)
+def labile_O_indices(rundict, nb_sites=1):
+    """returns the indices of the N non-equivalent oxygen positions
+    with the lowest bader charge (most oxydized)"""
 
     O_indices = []
 
-    O_site_list = sorted([s for s in dictStruct['equivSiteList']
+    O_site_list = sorted([s for s in rundict.equivSiteList
                           if s['element'] == "O"],
                          key=itemgetter('charge'))
 

@@ -14,7 +14,7 @@ import numpy as np
 from scipy.interpolate import griddata
 
 # personnal libraries
-# import read_rundict as read
+# import rundict_utils as read
 import structure_analysis.bailar_twist as bailar
 # import read_hull as hull
 import electronic_analysis.read_mag_props as nupdown

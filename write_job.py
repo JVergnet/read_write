@@ -14,7 +14,7 @@ from pymatgen import Structure
 from pymatgen.core.periodic_table import Element
 from pymatgen.io.vasp.sets import MPRelaxSet
 
-import electronic_analysis.read_rundict as read
+import electronic_analysis.rundict_utils as read
 import structure_analysis.createStructureList as create_list
 import rw_utils.platform_id as platform_id
 

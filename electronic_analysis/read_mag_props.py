@@ -15,7 +15,7 @@ import numpy as np
 # from mpl_toolkits.axes_grid1 import AxesGrid
 # from matplotlib.gridspec import GridSpec
 # personnal libraries
-# import read_rundict as read
+# import rundict_utils as read
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pymatgen.io.vasp.outputs import Oszicar  # Outcar
 # pymatgen libraries
