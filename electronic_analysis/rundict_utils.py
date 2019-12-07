@@ -127,9 +127,9 @@ class Rundict(ComputedStructureEntry):
         return nelect
 
     @property
-    def name_tag(self):
-        return "{} : {} : {}".format(
-            self.formula, self.stacking, self.str_id)
+    def name_tag(self, line_break=False):
+        s = "\n" if line_break else ' : '
+        return s.join([self.formula, self.stacking, self.str_id])
 
     @property
     def mag(self):

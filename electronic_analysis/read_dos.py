@@ -123,8 +123,9 @@ def plot_DOS_on_axe(axe, rundict, Emin, Emax,
     for q, e in enumerate(e_values):
         if e < Emin:
             ind_min = q
-        if e < Emax:
+        if e >= Emax:
             ind_max = q
+            break
     # XRD / DOS PLOTTING =====================================================
     # Generation of the graph XRD or DOS of the current structure
     # if param['graph_type'] == 'DOS' :
@@ -225,9 +226,9 @@ def plot_DOS_on_axe(axe, rundict, Emin, Emax,
     #     XRDCalc.get_xrd_plot(structure,annotate_peaks=False, ax=axe, with_labels=False)
 
     # Print the name and energy Tags on the left of the graph
-    legend = "{} Na{}\n({})".format(
-        rundict.stacking, rundict.x_na, rundict.str_id)
-    axe.text(-0.03, 0.5, legend,
+    # legend = "{} Na{}\n({})".format(
+    #     rundict.stacking, rundict.x_na, rundict.str_id)
+    axe.text(-0.03, 0.5, rundict.name_tag,
              horizontalalignment='right', verticalalignment='center',
              multialignment='right', transform=axe.transAxes)
     # Print the structure tag  on the right of the graph

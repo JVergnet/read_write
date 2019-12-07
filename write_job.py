@@ -482,7 +482,7 @@ def main():
                          Element("S"): Element("O")}
 
     for r in pristine_job_list:
-        r.structure.replace_species(li_ti_s_2_li_mn_o)
+        r.structure.replace_species({Element("S"): Element("O")})
 
     job_list = get_complete_structure_list(
         pristine_job_list)

@@ -37,17 +37,17 @@ def less_precise_incar(struct):
 
 def more_precise_incar(struct):
     "higher precision parameters"
-    return(dict(LCHARG="True",
-                ENCUT=700,
-                PREC='Accurate',
-                EDIFFG=-1E-02,
-                EDIFF=1E-06 * struct.num_sites,
-                # Close to the local minimum : RMM-DIIS (1)
-                IBRION=1,
-                SIGMA=0.01,
-                ISMEAR=0,
-                LELF="True",
-                ISYM=0))
+    return(dict(  # LCHARG="True",
+        ENCUT=700,
+        PREC='Accurate',
+        EDIFFG=-1E-02,
+        EDIFF=1E-06 * struct.num_sites,
+        # Close to the local minimum : RMM-DIIS (1)
+        IBRION=1,
+        # SIGMA=0.01,
+        ISMEAR=-5,
+        # LELF="True",
+        ISYM=0))
 
 
 def ultra_precise_incar():
@@ -306,14 +306,14 @@ def main():
                 # "SIGMA": 0.1
             incar.update({
                 "ALGO": "Normal",
-                "EDIFF": 0.001,
-                'ISMEAR': 0,
-                "SIGMA": 0.1,
+                "EDIFF": 0.0001,
+                'ISMEAR': -5,
+                # "SIGMA": 0.1,
                 "LCHARG": "True",
                 "LAECHG": "True"
             })
-            kpt = Kpoints.gamma_automatic(kpts=(1, 1, 1), shift=(0, 0, 0))
-            job.user_kpoint = kpt
+            # kpt = Kpoints.gamma_automatic(kpts=(1, 1, 1), shift=(0, 0, 0))
+            # job.user_kpoint = kpt
             print("yolo!!")
 
             print("MODIFIED PARAMETERS ========", incar)
@@ -401,7 +401,8 @@ def main():
         print("explicit jobpath", job.explicit_jobpath)
 
         if rerun_type == "identical":
-            os.mkdir(job.job_folder)
+            # like "mkdir -p" (create parent if necessary)
+            os.makedirs(job.job_folder)
         else:
             job.write_data_input()
 
