@@ -114,24 +114,21 @@ def plot_DOS_on_axe(axe, rundict, Emin, Emax,
                     doo_projected=False,
                     pre_defined_colors=None,
                     N_move_mean=1):
+    """Generation of the DOS of the current structure 
+    Each DOS plotting defines
+    a dict of { label : [Y values]} (densities)
+    and the corresponding colormap (colors)"""
 
-    # v = runDict['vaspRun']
-    [ymin, ymax] = [0, 0]
     e_values = rundict.data["tdos"].energies - rundict.data["efermi"]
     ind_min = 0
     ind_max = 0
     for q, e in enumerate(e_values):
         if e < Emin:
             ind_min = q
-        if e >= Emax:
+        if e < Emax:
             ind_max = q
-            break
-    # XRD / DOS PLOTTING =====================================================
-    # Generation of the graph XRD or DOS of the current structure
-    # if param['graph_type'] == 'DOS' :
-    # Each DOS plotting defines
-    # a dict of { label : [Y values]} (densities)
-    # and the corresponding colormap (colors)
+            # break
+    print(ind_min, ind_max)
 
     densities_list = []
 
@@ -178,6 +175,8 @@ def plot_DOS_on_axe(axe, rundict, Emin, Emax,
             s = np.insert(s, 0, x[0]*np.ones(half))
             return(s)
 
+    [ymin, ymax] = [0, 0]
+    # ymax, ymin = [0, 0]
     if spin_choice == 0:  # spin up & down
         for n, key in enumerate(densities_list[0].keys()):
             dos_up = move_mean(densities_list[0][key], N_move_mean)
@@ -187,7 +186,7 @@ def plot_DOS_on_axe(axe, rundict, Emin, Emax,
 
             ymax = max(ymax, max(dos_up[ind_min:ind_max]))
             ymin = min(ymin, min(dos_down[ind_min:ind_max]))
-
+        print([ymin, ymax])
     else:
         if spin_choice is 1:  # sum of up + down
             a = 1
@@ -228,9 +227,11 @@ def plot_DOS_on_axe(axe, rundict, Emin, Emax,
     # Print the name and energy Tags on the left of the graph
     # legend = "{} Na{}\n({})".format(
     #     rundict.stacking, rundict.x_na, rundict.str_id)
+
     axe.text(-0.03, 0.5, rundict.name_tag,
              horizontalalignment='right', verticalalignment='center',
              multialignment='right', transform=axe.transAxes)
+
     # Print the structure tag  on the right of the graph
     axe.text(1.03, 0.5, rundict.spacegroup,
              horizontalalignment='left', verticalalignment='center',

@@ -1,6 +1,5 @@
 # read_mag_props.py
 """ Plots 2D heatmaps (svg) and 3d surfaces (html) from abstract run data"""
-# from multiprocessing import Pool, cpu_count
 
 import math
 import os
@@ -10,31 +9,17 @@ from operator import attrgetter
 # from matplotlib.colors import LogNorm
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
-# generric libraries
 import numpy as np
-# from mpl_toolkits.axes_grid1 import AxesGrid
-# from matplotlib.gridspec import GridSpec
-# personnal libraries
-# import rundict_utils as read
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from pymatgen.io.vasp.outputs import Oszicar  # Outcar
-# pymatgen libraries
-# from pymatgen.io.vasp.outputs import Oszicar
+from pymatgen.io.vasp.outputs import Oszicar
 from scipy.interpolate import griddata
 
 import rw_utils.generic_plot as g_plot
 import rw_utils.platform_id as platform_id
 
-# from skimage import measure
-
-
 try:
-    # plotting libraries
-    # import plotly.offline as po
-    # import plotly.plotly as py
     import plotly.graph_objects as go
     import plotly.io as p_io
-    # from plotly import tools
     PLOTLY_OK = True
 except Exception as ex:
     print(ex)
@@ -269,8 +254,8 @@ def plot_nelect_heatmap(input_rundict_list):
     """
     attr_x = "nelect"
     attr_y = "doo"
-    landscapes_to_draw = [("O", "charge", "min", "Reds"),
-                          ("O", "charge", "max", "Blues")]
+    landscapes_to_draw = [("S", "charge", "mean", "Reds"),
+                          ("H", "charge", "mean", "Blues")]
 
     rundict_list = ([d for d in input_rundict_list if (
         d.status >= 3)])

@@ -253,65 +253,25 @@ def main():
         elif rerun_type == "custom":
 
             # incar['LDAUU']={'O': 6}
-
-            # incar['ENCUT']= 600
-            # incar['PREC'] = 'Normal'
-            # incar['EDIFFG'] = -1E-02
-            # incar['EDIFF'] = 1E-04
-            # incar["NSW"]=100
-            # ibrion far from min: conj. grad. algo (2)
-            # incar["LCHARG"] = "True"
-            # incar["SIGMA"] = 0.05
-            # incar["ISMEAR"] = 0
-            # incar["LELF"] = "False"
-            # incar["ISYM"] = 0
-            # incar_copy['LDAUU']={'O':2, 'Mn' : 3.9}
-            # incar_copy['LDAUL']={'O':1, 'Mn' : 2}
-            # incar_copy['SYSTEM'] = incar_copy['SYSTEM'].replace("cu", "ni")
-            # incar_copy['SYSTEM'] = incar_copy['SYSTEM'].replace("Cu", "Ni")
-            # incar_copy['ISIF'] = 3
-
-            # incar_copy["NELMIN"] = 1
-            # incar_copy['EDIFF'] = 1E-04
-            # incar['LDAUU'] = {'Ti': 3.9}
-
-            # incar["EMAX"] = 8
-            # incar["EMIN"] = -5
-            # incar["NEDOS"] = 5001
-
-            # incar["IBRION"] = 1
-            # incar["ALGO"] = "Normal"
             # incar["NCORE"] = 8
             # incar["KPAR"] = 2
             # incar["NUPDOWN"] = 0
-
-            # incar['ICHARG'] = 0
 
             # HSE06
             # incar["NSW"] = 0
             # incar['LHFCALC'] = "TRUE"
             # incar['HFSCREEN'] = 0.2
 
-            # PARCHG
-            # incar["LWAVE"] = "True"
-
-                # "ISMEAR": 0,
-                # 'EDIFF': 1E-02,
-
-                # "NELMDL": -10,
-                # "PREC": "Accurate",
-                # "ADDGRID": "True",
-                # "IBRION": 1,
-                # "NELM": 150,
-                # "SIGMA": 0.1
+            # paramagnetic
             incar.update({
-                "ALGO": "Normal",
-                "EDIFF": 0.0001,
-                'ISMEAR': -5,
-                # "SIGMA": 0.1,
-                "LCHARG": "True",
-                "LAECHG": "True"
+                "ISPIN": 1
             })
+
+            # anti-ferro-magnetic
+            incar.update({
+                "ISPIN": 1
+            })
+
             # kpt = Kpoints.gamma_automatic(kpts=(1, 1, 1), shift=(0, 0, 0))
             # job.user_kpoint = kpt
             print("yolo!!")

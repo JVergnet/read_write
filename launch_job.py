@@ -34,9 +34,18 @@ class SlurmJob(object):
         self._get_num_node_str(num_nodes)
         self._get_qos_str(QOS)
 
-        self.vasp_exec = VaspExecutable()
+        self.vasp_exec = self._get_job_type()
+
         self.workdir = None
         self.array = None
+
+    def _get_job_type(self):
+        try:
+            if input("do_bader in the array ? [Y]")[0] == "Y":
+                return VaspExecutable.bader_exec()
+        except Exception:
+            pass
+        return VaspExecutable()
 
     def _get_name_str(self, input_name):
         if input_name is not None:
@@ -257,6 +266,12 @@ class VaspExecutable(object):
         print("_".join(str_list))
 
         return "_".join(str_list)
+
+    @classmethod
+    def bader_exec(cls):
+        "return the name of the bader executable"
+        return VaspExecutable(set_dir=None, base_job_name="bader_job",
+                              nb_runs="single", array=True, gamma=False, nc=False)
 
 
 if __name__ == '__main__':

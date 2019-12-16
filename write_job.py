@@ -47,15 +47,19 @@ class Job(MPRelaxSet):
         self.entry_id = entry_id
         self.job_folder = job_folder
         # print(structure)
-
-        self.user_kpoint = {'reciprocal_density': 100}
+        # if "user_kpoint" in kwargs.keys():
+        #     self.user_kpoint = kwargs["user_kpoint"]
+        #     kwargs.pop("user_kpoint")
+        #     print(kwargs)
+        # else:
+        #     self.user_kpoint = {'reciprocal_density': 100}
         self.user_param = user_param
         self.user_incar = user_incar if user_incar is not None \
             else default_incar()
 
         self.kwargs = kwargs
-        for (key, value) in kwargs.items():
-            setattr(self, key, value)
+        # for (key, value) in kwargs.items():
+        #     setattr(self, key, value)
 
         # print(self.__dict__)
         self.standardize = False
@@ -120,10 +124,11 @@ class Job(MPRelaxSet):
             self.user_incar.pop('MAGMOM')
         print(self.user_incar)
         super().__init__(self.structure,
-                         user_kpoints_settings=self.user_kpoint,
+                         # user_kpoints_settings=self.user_kpoint,
                          force_gamma=True,
                          user_incar_settings=self.user_incar,
                          potcar_functional='PBE_54',
+                         **self.kwargs
                          )
         # print("POTCAR FUNCTIONNAL :", self.potcar_functional)
         self.write_input(self.job_folder)

@@ -41,7 +41,7 @@ def plot_hull_graphs(sorted_entries, coord="x_na", **kwargs):
             sorted_converged_entries,
             prop_list=['energy_per_fu'],
             legend=None,
-            x_na_coords=None)
+            x_na_coords=coord)
         for s in sorted_converged_entries:
             print("{} {}/n".format(s.str_id, s.energy_per_fu))
 
