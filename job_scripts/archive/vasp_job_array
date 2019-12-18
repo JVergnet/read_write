@@ -1,0 +1,26 @@
+#!/bin/bash
+# Job name:static
+
+# Project:
+##SBATCH --account=YourProject
+# Wall clock limit:
+#SBATCH --time=2400:00:00
+#SBATCH --mail-type=end
+#SBATCH -N 1
+
+#!/bin/bash
+ulimit -a
+ulimit -l unlimited
+ulimit -s unlimited
+source /usr/local/bin/intel13.0.sh
+export LD_LIBRARY_PATH=/opt/intel/composer_xe_2013.3.163/mkl/lib/intel64/:$LD_LIBRARY_PATH
+
+array=$(ls -d -- */)
+arr=(${array[*]})
+echo ${SLURM_ARRAY_TASK_ID}
+cd ${arr[${SLURM_ARRAY_TASK_ID}-1]}
+echo "JOBDIR="$PWD
+
+mpirun --bind-to-core /home/sol/Vasp/Vasp5/vasp.5.4.1/build/std/vasp > log_1
+
+mkdir OK

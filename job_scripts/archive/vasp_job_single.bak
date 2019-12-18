@@ -1,0 +1,29 @@
+#!/bin/sh
+# Job name:static
+
+# Project:
+##SBATCH --account=YourProject
+# Wall clock limit:
+#SBATCH --time=2400:00:00
+#SBATCH --mail-type=end
+#SBATCH -N 1
+
+
+#!/bin/bash
+source /usr/local/bin/intel18.sh
+#export I_MPI_CHECK_DAPL_PROVIDER_MISMATCH=off 
+#export I_MPI_FABRICS=shm:tmi 
+#export I_MPI_PIN_RESPECT_HCA=1
+export I_MPI_PIN=1
+ulimit -s unlimited
+ulimit -a
+
+
+echo "JOBDIR="$PWD
+
+cp POSCAR INIT_POSCAR
+mpirun -bootstrap slurm /home/sol/Vasp/Vasp5/vasp.5.4.4-17/bin/vasp_std > log1
+cp CONTCAR POSCAR
+
+mkdir OK
+

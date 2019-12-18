@@ -1,0 +1,61 @@
+#!/bin/bash
+# Job name:static
+
+# Project:
+##SBATCH --account=YourProject
+# Wall clock limit:
+#SBATCH --time=2400:00:00
+#SBATCH --mail-type=end
+#SBATCH -N 1
+
+#SBATCH --output=Array.%A_%a.out
+
+#!/bin/bash
+ulimit -a
+ulimit -l unlimited
+ulimit -s unlimited
+source /usr/local/bin/intel13.0.sh
+export LD_LIBRARY_PATH=/opt/intel/composer_xe_2013.3.163/mkl/lib/intel64/:$LD_LIBRARY_PATH
+
+
+
+# folder achitecture :
+# P2-P3_project/specie/stacking/jobfolder/POSCAR
+# exemple : P2-P3_project/Li/O3/Na05-li033-mn067-o2__O3-0/POSCAR
+# Launch an array for each specie ($CWD = P2-P3_project/Li )
+
+echo ${SLURM_ARRAY_TASK_ID}
+
+# scan for all stackings dir : (4 dir, 7 job each)
+stacking_dir_list=$(ls -d -- */)
+stack_arr=(${stacking_dir_list[*]})
+
+folder_number=$((${SLURM_ARRAY_TASK_ID}/7%4))
+echo ${folder_number}
+
+stacking_dir_name=${stack_arr[${folder_number}]}
+echo ${stacking_dir_name}
+cd ${stacking_dir_name}
+
+echo "JOBDIR="$PWD
+
+job_array=$(ls -d -- */)
+job_arr=(${job_array[*]})
+
+job_number=$((${SLURM_ARRAY_TASK_ID}%7))
+echo $job_number
+job_name=${job_arr[${job_number}]}
+echo $job_name
+cd $job_name
+echo "JOBDIR="$PWD
+
+touch visited
+
+cp POSCAR INIT_POSCAR
+mpirun --bind-to-core /home/sol/Vasp/Vasp5/vasp.5.4.1/build/std/vasp > log1
+cp CONTCAR POSCAR
+mpirun --bind-to-core /home/sol/Vasp/Vasp5/vasp.5.4.1/build/std/vasp > log2
+cp POSCAR INIT_2_POSCAR
+cp CONTCAR POSCAR
+
+
