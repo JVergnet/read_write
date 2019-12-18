@@ -21,9 +21,11 @@ Additionally : *Read_run_app* is a visual interface which allows to perform this
 
 These high-level scripts rely on 2 main subpackages : 
 
- -- pre-run analysis, involving only the structure (subpackage structural_analysis)
+ -- *structural_analysis* involving only the structure (subpackage structural_analysis)
 
- -- post-run analysis, which involves also the electronic properties (subpackage electronic _analysis)
+ -- *electronic_analysis* which involves also the electronic properties (subpackage electronic _analysis)
+ 
+ ----------------------------------------------------------
 
- -- rw_utils & filtering subpackages help for all these functions  
+ *rw_utils* & *filtering* subpackages help for all these functions  
 
